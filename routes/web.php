@@ -6,7 +6,9 @@ use App\Http\Controllers\API\Mikrotik\MikrotikController;
 use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\SubZoneController;
 use App\Http\Controllers\API\ZoneController;
+use App\Http\Controllers\LandlordTenantController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TenantApplicationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -20,9 +22,19 @@ Route::get('/', function () {
     ]);
 });
 
+
+Route::get('/apply-organization', [TenantApplicationController::class, 'create'])->name('tenant.apply.create');
+Route::post('/apply-organization', [TenantApplicationController::class, 'store'])->name('tenant.apply.store');
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+
+    Route::prefix('landlord')->name('landlord.')->group(function () {
+        Route::get('/tenants', [LandlordTenantController::class, 'index'])->name('tenants.index');
+        Route::post('/tenants/{application}/approve', [LandlordTenantController::class, 'approve'])->name('tenants.approve');
+    });
 
     Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function () {
         // --- ZONE MANAGEMENT ---

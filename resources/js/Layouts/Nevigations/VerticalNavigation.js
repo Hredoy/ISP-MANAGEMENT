@@ -41,5 +41,6 @@ export const navItems = [
     { name: 'SUBSCRIBERS', href: '/dashboard/subscribers', icon: Users, component: 'Subscribers/Index' },
     { name: 'PACKAGES', href: '/dashboard/packages', icon: Zap, component: 'Packages/Index' },
     { name: 'BILLING', href: '/dashboard/billing', icon: CreditCard, component: 'Billing/Index' },
+    { name: 'LANDLORD_TENANTS', href: '/landlord/tenants', icon: Settings, component: 'Landlord/Tenants' },
     { name: 'SETTINGS', href: '/dashboard/settings', icon: Settings, component: 'Settings' },
 ];
