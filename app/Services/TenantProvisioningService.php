@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\TenantApplication;
+use Database\Seeders\TenantDatabaseSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,8 @@ class TenantProvisioningService
             '--database' => 'tenant',
             '--force' => true,
         ]);
+
+        (new TenantDatabaseSeeder)->run($application);
 
         $application->update([
             'slug' => $slug,
