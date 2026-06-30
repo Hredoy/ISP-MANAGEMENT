@@ -26,7 +26,7 @@ class MikrotikController extends Controller
         return Inertia::render('Mikrotik/Create');
     }
 
-    public function store(Request $request, MikrotikService $mikrotikService): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -37,16 +37,10 @@ class MikrotikController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        // Test connection before saving
-        $test = $mikrotikService->getSystemStats($data['host'], $data['username'], $data['password'], $data['port']);
-
-        if (isset($test['error'])) {
-            return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
-        }
-
         Mikrotik::create($data);
 
-        return redirect()->route('dashboard.mikrotik.index');
+        return redirect()->route('dashboard.mikrotik.index')
+            ->with('message', 'NODE_CREATED_SUCCESSFULLY');
     }
 
     public function edit(Mikrotik $mikrotik): Response
