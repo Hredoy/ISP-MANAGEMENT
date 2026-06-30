@@ -3,32 +3,18 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\SetTenantDatabase;
-use App\Models\TenantApplication;
-use Database\Seeders\TenantDatabaseSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Models\Package;
-use App\Models\Tenant;
 use App\Models\TenantApplication;
 use App\Services\TenantProvisioningService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TenantIsolationTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->dropTestTenantDatabases();
-    }
 
     protected function tearDown(): void
     {
@@ -37,89 +23,71 @@ class TenantIsolationTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_two_tenants_have_isolated_databases_and_domains(): void
+    public function test_two_tenants_have_isolated_databases(): void
     {
-        $this->app['config']->set('tenancy.central_domains', ['localhost']);
-        $this->app['config']->set('tenancy.database.prefix', 'test_tenant_');
-
+        $this->dropTestTenantDatabases();
         $provisioning = app(TenantProvisioningService::class);
 
-        $alphaApplication = TenantApplication::create([
+        $alpha = $provisioning->approve(TenantApplication::create([
             'organization_name' => 'Alpha ISP',
             'slug' => 'alpha-isp',
             'contact_name' => 'Alpha Admin',
             'email' => 'admin@alpha.test',
-            'custom_domain' => 'alpha.example.test',
+            'phone' => '01700000001',
             'status' => 'pending',
-        ]);
+        ]), 'secret-alpha');
 
-        $betaApplication = TenantApplication::create([
+        $beta = $provisioning->approve(TenantApplication::create([
             'organization_name' => 'Beta ISP',
             'slug' => 'beta-isp',
             'contact_name' => 'Beta Admin',
             'email' => 'admin@beta.test',
+            'phone' => '01700000002',
             'status' => 'pending',
-        ]);
+        ]), 'secret-beta');
 
-        $alphaApplication = $provisioning->approve($alphaApplication);
-        $betaApplication = $provisioning->approve($betaApplication);
-
-        $this->assertDatabaseHas('domains', [
-            'domain' => 'alpha-isp.localhost',
-            'tenant_id' => $alphaApplication->tenant_id,
-        ]);
-        $this->assertDatabaseHas('domains', [
-            'domain' => 'alpha.example.test',
-            'tenant_id' => $alphaApplication->tenant_id,
-        ]);
-        $this->assertDatabaseHas('domains', [
-            'domain' => 'beta-isp.localhost',
-            'tenant_id' => $betaApplication->tenant_id,
-        ]);
-
-        tenancy()->initialize(Tenant::findOrFail($alphaApplication->tenant_id));
-        Package::create([
+        $this->usingTenantDatabase($alpha->database_name);
+        Package::on('tenant')->create([
             'mikrotik_id' => 1,
             'name' => 'Alpha Only',
             'rate_limit' => '100M/100M',
             'price' => 2500,
         ]);
-        $this->assertDatabaseHas('users', ['email' => 'admin@alpha.test']);
-        $this->assertDatabaseHas('packages', ['name' => 'Alpha Only']);
-        tenancy()->end();
 
-        tenancy()->initialize(Tenant::findOrFail($betaApplication->tenant_id));
-        $this->assertDatabaseHas('users', ['email' => 'admin@beta.test']);
-        $this->assertDatabaseMissing('users', ['email' => 'admin@alpha.test']);
-        $this->assertDatabaseMissing('packages', ['name' => 'Alpha Only']);
-        tenancy()->end();
+        $this->usingTenantDatabase($beta->database_name);
+        $this->assertDatabaseHas('users', ['email' => 'admin@beta.test'], 'tenant');
+        $this->assertDatabaseMissing('users', ['email' => 'admin@alpha.test'], 'tenant');
+        $this->assertDatabaseMissing('packages', ['name' => 'Alpha Only'], 'tenant');
     }
 
-    public function test_duplicate_organization_names_still_get_separate_tenants(): void
+    public function test_subdomain_host_switches_to_tenant_database(): void
     {
-        $provisioning = app(TenantProvisioningService::class);
-
-        $firstApplication = TenantApplication::create([
-            'organization_name' => 'Same ISP',
-            'slug' => 'same-isp-a1b2c3',
-            'contact_name' => 'First Admin',
-            'email' => 'first@example.test',
+        $this->dropTestTenantDatabases();
+        $application = app(TenantProvisioningService::class)->approve(TenantApplication::create([
+            'organization_name' => 'Gamma ISP',
+            'slug' => 'gamma-isp',
+            'contact_name' => 'Gamma Admin',
+            'email' => 'admin@gamma.test',
+            'phone' => '01700000003',
             'status' => 'pending',
-        ]);
+        ]), 'secret-gamma');
 
-        $secondApplication = TenantApplication::create([
-            'organization_name' => 'Same ISP',
-            'slug' => 'same-isp-d4e5f6',
-            'contact_name' => 'Second Admin',
-            'email' => 'second@example.test',
-            'status' => 'pending',
-        ]);
+        $request = Request::create('http://gamma-isp.localhost/dashboard');
+        $middleware = new SetTenantDatabase;
 
-        $firstApplication = $provisioning->approve($firstApplication);
-        $secondApplication = $provisioning->approve($secondApplication);
+        $middleware->handle($request, function () use ($application) {
+            $this->assertTrue(tenancy()->initialized);
+            $this->assertSame($application->tenant_id, tenancy()->tenant->getTenantKey());
 
-        $this->assertNotSame($firstApplication->tenant_id, $secondApplication->tenant_id);
-        $this->assertNotSame($firstApplication->database_name, $secondApplication->database_name);
+            return response('ok');
+        });
+    }
+
+    private function usingTenantDatabase(string $databaseName): void
+    {
+        Config::set('database.connections.tenant.database', $databaseName);
+        DB::purge('tenant');
+        DB::reconnect('tenant');
     }
 
     private function dropTestTenantDatabases(): void

@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('mikrotiks')) {
+            return;
+        }
+
         Schema::table('mikrotiks', function (Blueprint $table) {
             $table->text('description')->nullable()->after('password');
         });
@@ -15,6 +19,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasTable('mikrotiks')) {
+            return;
+        }
+
         Schema::table('mikrotiks', function (Blueprint $table) {
             $table->dropColumn('description');
         });

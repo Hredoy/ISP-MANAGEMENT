@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Mikrotik;
 use App\Models\Package;
 use App\Models\Setting;
+use App\Models\TenantApplication;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -12,14 +13,14 @@ use Illuminate\Support\Str;
 
 class TenantDatabaseSeeder extends Seeder
 {
-    public function run(): void
+    public function run(?TenantApplication $application = null): void
     {
         $tenant = tenant();
-        $adminEmail = $tenant?->getAttribute('admin_email') ?: 'admin@example.com';
-        $adminName = $tenant?->getAttribute('admin_name') ?: 'Tenant Admin';
-        $organizationName = $tenant?->getAttribute('organization_name') ?: $tenant?->getTenantKey();
+        $adminEmail = $application?->email ?: $tenant?->getAttribute('admin_email') ?: 'admin@example.com';
+        $adminName = $application?->contact_name ?: $tenant?->getAttribute('admin_name') ?: 'Tenant Admin';
+        $organizationName = $application?->organization_name ?: $tenant?->getAttribute('organization_name') ?: $tenant?->getTenantKey();
 
-        User::firstOrCreate(
+        User::on('tenant')->firstOrCreate(
             ['email' => $adminEmail],
             [
                 'name' => $adminName,
@@ -28,7 +29,7 @@ class TenantDatabaseSeeder extends Seeder
             ]
         );
 
-        $router = Mikrotik::firstOrCreate(
+        $router = Mikrotik::on('tenant')->firstOrCreate(
             ['name' => 'Default Router'],
             [
                 'host' => '127.0.0.1',
@@ -40,13 +41,14 @@ class TenantDatabaseSeeder extends Seeder
         );
 
         $packages = [
-            ['name' => 'Starter 10 Mbps', 'rate_limit' => '10M/10M', 'price' => 500],
-            ['name' => 'Standard 20 Mbps', 'rate_limit' => '20M/20M', 'price' => 800],
-            ['name' => 'Premium 50 Mbps', 'rate_limit' => '50M/50M', 'price' => 1500],
+            ['name' => 'Nano', 'rate_limit' => '5M/5M', 'price' => 500],
+            ['name' => 'Starter', 'rate_limit' => '10M/10M', 'price' => 800],
+            ['name' => 'Pro', 'rate_limit' => '20M/20M', 'price' => 1200],
+            ['name' => 'Enterprise', 'rate_limit' => '50M/50M', 'price' => 1500],
         ];
 
         foreach ($packages as $package) {
-            Package::firstOrCreate(
+            Package::on('tenant')->firstOrCreate(
                 ['name' => $package['name']],
                 [
                     ...$package,
@@ -56,12 +58,12 @@ class TenantDatabaseSeeder extends Seeder
             );
         }
 
-        Setting::updateOrCreate(['key' => 'organization'], ['value' => [
+        Setting::on('tenant')->updateOrCreate(['key' => 'organization'], ['value' => [
             'name' => $organizationName,
             'tenant_id' => $tenant?->getTenantKey(),
         ]]);
 
-        Setting::updateOrCreate(['key' => 'billing'], ['value' => [
+        Setting::on('tenant')->updateOrCreate(['key' => 'billing'], ['value' => [
             'currency' => 'BDT',
             'billing_day' => 1,
         ]]);

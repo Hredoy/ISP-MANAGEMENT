@@ -19,20 +19,26 @@ class TenantDatabaseSeederTest extends TestCase
     {
         parent::setUp();
 
-        // Point the 'tenant' connection at its own in-memory sqlite database
-        // and migrate it, mirroring what TenantProvisioningService does
-        // against a real tenant MySQL database.
-        Config::set('database.connections.tenant', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-        ]);
+        $this->dropTenantDatabase();
+        DB::statement('CREATE DATABASE `test_tenant_seeder` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+
+        Config::set('database.connections.tenant', array_replace(Config::get('database.connections.mysql'), [
+            'database' => 'test_tenant_seeder',
+        ]));
         DB::purge('tenant');
 
         Artisan::call('migrate', [
             '--database' => 'tenant',
+            '--path' => 'database/migrations/tenant',
             '--force' => true,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->dropTenantDatabase();
+
+        parent::tearDown();
     }
 
     public function test_it_creates_a_default_admin_user_on_the_tenant_connection(): void
@@ -72,5 +78,10 @@ class TenantDatabaseSeederTest extends TestCase
         (new TenantDatabaseSeeder)->run($application);
 
         $this->assertSame(1, User::on('tenant')->where('email', 'jane@acme-isp.test')->count());
+    }
+
+    private function dropTenantDatabase(): void
+    {
+        DB::statement('DROP DATABASE IF EXISTS `test_tenant_seeder`');
     }
 }
