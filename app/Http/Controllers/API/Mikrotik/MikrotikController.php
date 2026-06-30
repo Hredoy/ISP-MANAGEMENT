@@ -28,10 +28,13 @@ class MikrotikController extends Controller
 
     public function store(Request $request, MikroTikService $mikroTikService): RedirectResponse
     {
-        $request->validate([
-            'host' => 'required',
-            'username' => 'required',
-            'password' => 'required',
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'host' => 'required|string|max:255',
+            'port' => 'required|integer|min:1|max:65535',
+            'username' => 'required|string|max:255',
+            'password' => 'required|string|max:255',
+            'description' => 'nullable|string',
         ]);
 
         // Test connection before saving
@@ -61,6 +64,7 @@ class MikrotikController extends Controller
             'port' => 'required|numeric',
             'username' => 'required',
             'password' => 'required',
+            'description' => 'nullable|string',
         ]);
 
         $mikrotik->update($data);
@@ -76,6 +80,26 @@ class MikrotikController extends Controller
         return redirect()->back();
     }
 
+    public function checkConnection(Mikrotik $mikrotik, MikrotikService $service): JsonResponse
+    {
+        $stats = $service->getSystemStats($mikrotik->host, $mikrotik->username, $mikrotik->password, $mikrotik->port);
+
+        if (isset($stats['error'])) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'CONNECTION_FAILED',
+            ], 422);
+        }
+
+        $mikrotik->forceFill(['last_ping' => now()])->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'CONNECTION_OK',
+            'uptime' => $stats['uptime'] ?? null,
+        ]);
+    }
+
     public function getLiveStats(Mikrotik $mikrotik, MikroTikService $service): JsonResponse
     {
         // 1. Get System Stats (CPU, RAM, Uptime)
@@ -83,6 +107,7 @@ class MikrotikController extends Controller
 
         // 2. Connect for specialized queries
         $client = $service->connect($mikrotik);
+
 
         $activeUsers = 0;
         $activeIps = 0;

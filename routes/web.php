@@ -22,14 +22,12 @@ Route::get('/', function () {
     ]);
 });
 
-
 Route::get('/apply-organization', [TenantApplicationController::class, 'create'])->name('tenant.apply.create');
 Route::post('/apply-organization', [TenantApplicationController::class, 'store'])->name('tenant.apply.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
 
     Route::prefix('landlord')->name('landlord.')->group(function () {
         Route::get('/tenants', [LandlordTenantController::class, 'index'])->name('tenants.index');
@@ -60,6 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/{mikrotik}/edit', [MikrotikController::class, 'edit'])->name('edit');
             Route::put('/{mikrotik}', [MikrotikController::class, 'update'])->name('update');
             Route::delete('/{mikrotik}', [MikrotikController::class, 'destroy'])->name('destroy');
+            Route::post('/{mikrotik}/check-connection', [MikrotikController::class, 'checkConnection'])->name('check-connection');
 
             // Real-time monitoring of a specific router
             Route::get('/{mikrotik}/stats', [MikrotikController::class, 'getLiveStats'])->name('mikrotik.stats');

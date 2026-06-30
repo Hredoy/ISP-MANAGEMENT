@@ -16,6 +16,7 @@ const form = useForm({
     port: props.router.port,
     username: props.router.username,
     password: props.router.password,
+    description: props.router.description ?? '',
 });
 
 const submit = () => {
@@ -78,6 +79,12 @@ const submit = () => {
                     <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Auth_Key</label>
                     <input v-model="form.password" type="password"
                            class="w-full bg-black border border-primary/20 p-3 text-primary outline-none">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Description</label>
+                    <textarea v-model="form.description" rows="3"
+                              class="w-full bg-black border border-primary/20 p-3 text-primary outline-none resize-y"></textarea>
                 </div>
 
                 <div class="md:col-span-2 pt-4">
