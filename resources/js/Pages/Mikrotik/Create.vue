@@ -5,7 +5,7 @@ import { useForm } from '@inertiajs/vue3';
 defineOptions({ layout: ISPLayout });
 
 const form = useForm({
-    name: '', host: '', username: '', password: '', port: 8728
+    name: '', host: '', username: '', password: '', port: 8728, description: ''
 });
 
 const submit = () => form.post('/dashboard/mikrotik');
@@ -39,6 +39,10 @@ const submit = () => form.post('/dashboard/mikrotik');
                     <label class="block text-[10px] mb-1">PASS_KEY</label>
                     <input v-model="form.password" type="password" class="w-full bg-black border border-primary/40 p-2 text-primary outline-none">
                 </div>
+            </div>
+            <div>
+                <label class="block text-[10px] mb-1">DESCRIPTION</label>
+                <textarea v-model="form.description" rows="3" class="w-full bg-black border border-primary/40 p-2 text-primary outline-none resize-y"></textarea>
             </div>
 
             <button :disabled="form.processing" class="w-full bg-primary text-black font-bold py-3 uppercase text-xs mt-4">
