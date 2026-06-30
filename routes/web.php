@@ -9,6 +9,7 @@ use App\Http\Controllers\API\ZoneController;
 use App\Http\Controllers\LandlordTenantController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantApplicationController;
+use App\Http\Middleware\EnsureTenantContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -27,14 +28,14 @@ Route::post('/apply-organization', [TenantApplicationController::class, 'store']
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(EnsureTenantContext::class)->name('dashboard');
 
     Route::prefix('landlord')->name('landlord.')->group(function () {
         Route::get('/tenants', [LandlordTenantController::class, 'index'])->name('tenants.index');
         Route::post('/tenants/{application}/approve', [LandlordTenantController::class, 'approve'])->name('tenants.approve');
     });
 
-    Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function () {
+    Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.', 'middleware' => EnsureTenantContext::class], function () {
         // --- ZONE MANAGEMENT ---
         Route::resource('zones', ZoneController::class);
         Route::resource('sub-zones', SubZoneController::class);
