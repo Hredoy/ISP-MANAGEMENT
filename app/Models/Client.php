@@ -13,8 +13,14 @@ class Client extends Model
     {
         return $this->belongsTo(Zone::class);
     }
+
     public function sub_zone(): BelongsTo
     {
         return $this->belongsTo(SubZone::class);
+    }
+
+    public function mikrotik(): BelongsTo
+    {
+        return $this->belongsTo(Mikrotik::class);
     }
 }

@@ -2,11 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\TenantApplication;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
+use Stancl\Tenancy\Database\Models\Domain;
 use Symfony\Component\HttpFoundation\Response;
 
 class SetTenantDatabase
@@ -14,31 +12,24 @@ class SetTenantDatabase
     public function handle(Request $request, Closure $next): Response
     {
         $host = $request->getHost();
-        $landlordDomain = env('LANDLORD_DOMAIN', 'localhost');
+        $centralDomains = array_filter(array_map('trim', explode(',', env('CENTRAL_DOMAINS', '127.0.0.1,localhost,'.env('LANDLORD_DOMAIN', 'localhost')))));
 
-        if ($host === $landlordDomain || $host === 'www.'.$landlordDomain) {
+        if (in_array($host, $centralDomains, true) || in_array(preg_replace('/^www\./', '', $host), $centralDomains, true)) {
             return $next($request);
         }
 
-        if (! str_ends_with($host, '.'.$landlordDomain)) {
-            return $next($request);
-        }
+        $domain = Domain::where('domain', $host)->first();
 
-        $subdomain = str_replace('.'.$landlordDomain, '', $host);
-
-        $tenant = TenantApplication::where('slug', $subdomain)
-            ->where('status', 'approved')
-            ->first();
-
-        if (! $tenant || ! $tenant->database_name) {
+        if (! $domain) {
             abort(404, 'Tenant not found or not approved yet.');
         }
 
-        Config::set('database.connections.tenant.database', $tenant->database_name);
-        Config::set('database.default', 'tenant');
-        DB::purge('tenant');
-        DB::reconnect('tenant');
+        tenancy()->initialize($domain->tenant);
 
-        return $next($request);
+        try {
+            return $next($request);
+        } finally {
+            tenancy()->end();
+        }
     }
 }
