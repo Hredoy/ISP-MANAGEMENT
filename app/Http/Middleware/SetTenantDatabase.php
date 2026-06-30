@@ -12,7 +12,11 @@ class SetTenantDatabase
     public function handle(Request $request, Closure $next): Response
     {
         $host = $request->getHost();
-        $centralDomains = array_filter(array_map('trim', explode(',', env('CENTRAL_DOMAINS', '127.0.0.1,localhost,'.env('LANDLORD_DOMAIN', 'localhost')))));
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+        $centralDomains = array_values(array_unique(array_filter([
+            $appHost,
+            ...array_map('trim', explode(',', env('CENTRAL_DOMAINS', '127.0.0.1,localhost,'.env('LANDLORD_DOMAIN', 'localhost')))),
+        ])));
 
         if (in_array($host, $centralDomains, true) || in_array(preg_replace('/^www\./', '', $host), $centralDomains, true)) {
             return $next($request);
