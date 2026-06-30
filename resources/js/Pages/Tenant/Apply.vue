@@ -11,6 +11,7 @@ const form = useForm({
   contact_name: '',
   email: '',
   phone: '',
+  custom_domain: '',
 });
 
 const submit = () => {
@@ -49,6 +50,12 @@ const submit = () => {
           <InputLabel for="phone" value="Phone" />
           <TextInput id="phone" v-model="form.phone" class="mt-1 block w-full" />
           <InputError class="mt-2" :message="form.errors.phone" />
+        </div>
+
+        <div>
+          <InputLabel for="custom_domain" value="Custom Domain (optional)" />
+          <TextInput id="custom_domain" v-model="form.custom_domain" class="mt-1 block w-full" placeholder="isp.example.com" />
+          <InputError class="mt-2" :message="form.errors.custom_domain" />
         </div>
 
         <PrimaryButton :disabled="form.processing">Submit Application</PrimaryButton>

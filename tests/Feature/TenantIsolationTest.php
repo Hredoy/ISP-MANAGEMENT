@@ -11,124 +11,123 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Models\Package;
+use App\Models\Tenant;
+use App\Models\TenantApplication;
+use App\Services\TenantProvisioningService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TenantIsolationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private array $tenantDatabasePaths = [];
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->dropTestTenantDatabases();
+    }
 
     protected function tearDown(): void
     {
+        $this->dropTestTenantDatabases();
+
         parent::tearDown();
-
-        DB::purge('tenant');
-
-        foreach ($this->tenantDatabasePaths as $path) {
-            @unlink($path);
-        }
     }
 
-    /**
-     * Provision a real tenant database (file-based sqlite, standing in for a
-     * tenant MySQL database) the same way TenantProvisioningService does:
-     * point the 'tenant' connection at it, migrate, then seed.
-     */
-    private function provisionTenantDatabase(string $slug, string $contactName, string $email): TenantApplication
+    public function test_two_tenants_have_isolated_databases_and_domains(): void
     {
-        $path = tempnam(sys_get_temp_dir(), 'tenant_');
-        $this->tenantDatabasePaths[] = $path;
+        $this->app['config']->set('tenancy.central_domains', ['localhost']);
+        $this->app['config']->set('tenancy.database.prefix', 'test_tenant_');
 
-        Config::set('database.connections.tenant', [
-            'driver' => 'sqlite',
-            'database' => $path,
-            'prefix' => '',
-        ]);
-        DB::purge('tenant');
+        $provisioning = app(TenantProvisioningService::class);
 
-        Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--force' => true,
-        ]);
-
-        $application = TenantApplication::create([
-            'organization_name' => $slug,
-            'slug' => $slug,
-            'contact_name' => $contactName,
-            'email' => $email,
-            'status' => 'approved',
-            'database_name' => $path,
-            'subdomain' => $slug.'.localhost',
-            'approved_at' => now(),
-        ]);
-
-        (new TenantDatabaseSeeder)->run($application);
-
-        return $application;
-    }
-
-    public function test_tenant_databases_are_isolated_and_subdomain_routing_is_enforced(): void
-    {
-        $landlordDefault = config('database.default');
-
-        $this->provisionTenantDatabase('tenant1', 'Alice', 'alice@tenant1.test');
-        $this->provisionTenantDatabase('tenant2', 'Bob', 'bob@tenant2.test');
-
-        $middleware = new SetTenantDatabase;
-
-        // Each call below simulates a separate web request. In production
-        // every request boots a fresh container (so 'database.default'
-        // always starts from config/database.php); replicate that here by
-        // resetting it before each simulated request.
-        Config::set('database.default', $landlordDefault);
-        $middleware->handle(
-            Request::create('http://tenant1.localhost/dashboard'),
-            fn () => response('ok')
-        );
-        $this->assertSame(
-            ['alice@tenant1.test'],
-            DB::connection('tenant')->table('users')->pluck('email')->all(),
-            'tenant1 request must only see tenant1 data'
-        );
-
-        Config::set('database.default', $landlordDefault);
-        $middleware->handle(
-            Request::create('http://tenant2.localhost/dashboard'),
-            fn () => response('ok')
-        );
-        $this->assertSame(
-            ['bob@tenant2.test'],
-            DB::connection('tenant')->table('users')->pluck('email')->all(),
-            'tenant2 request must only see tenant2 data, never tenant1 data'
-        );
-
-        // Landlord/main domain requests must bypass tenant switching entirely.
-        Config::set('database.default', $landlordDefault);
-        $middleware->handle(
-            Request::create('http://localhost/dashboard'),
-            fn () => response('ok')
-        );
-        $this->assertSame($landlordDefault, config('database.default'));
-        $this->assertDatabaseMissing('users', ['email' => 'alice@tenant1.test']);
-        $this->assertDatabaseMissing('users', ['email' => 'bob@tenant2.test']);
-
-        // A subdomain for a pending (not yet approved) tenant must 404, not
-        // silently fall through to some other tenant's database.
-        TenantApplication::create([
-            'organization_name' => 'tenant3',
-            'slug' => 'tenant3',
-            'contact_name' => 'Carl',
-            'email' => 'carl@tenant3.test',
+        $alphaApplication = TenantApplication::create([
+            'organization_name' => 'Alpha ISP',
+            'slug' => 'alpha-isp',
+            'contact_name' => 'Alpha Admin',
+            'email' => 'admin@alpha.test',
+            'custom_domain' => 'alpha.example.test',
             'status' => 'pending',
         ]);
 
-        Config::set('database.default', $landlordDefault);
-        $this->expectException(NotFoundHttpException::class);
+        $betaApplication = TenantApplication::create([
+            'organization_name' => 'Beta ISP',
+            'slug' => 'beta-isp',
+            'contact_name' => 'Beta Admin',
+            'email' => 'admin@beta.test',
+            'status' => 'pending',
+        ]);
 
-        $middleware->handle(
-            Request::create('http://tenant3.localhost/dashboard'),
-            fn () => response('ok')
-        );
+        $alphaApplication = $provisioning->approve($alphaApplication);
+        $betaApplication = $provisioning->approve($betaApplication);
+
+        $this->assertDatabaseHas('domains', [
+            'domain' => 'alpha-isp.localhost',
+            'tenant_id' => $alphaApplication->tenant_id,
+        ]);
+        $this->assertDatabaseHas('domains', [
+            'domain' => 'alpha.example.test',
+            'tenant_id' => $alphaApplication->tenant_id,
+        ]);
+        $this->assertDatabaseHas('domains', [
+            'domain' => 'beta-isp.localhost',
+            'tenant_id' => $betaApplication->tenant_id,
+        ]);
+
+        tenancy()->initialize(Tenant::findOrFail($alphaApplication->tenant_id));
+        Package::create([
+            'mikrotik_id' => 1,
+            'name' => 'Alpha Only',
+            'rate_limit' => '100M/100M',
+            'price' => 2500,
+        ]);
+        $this->assertDatabaseHas('users', ['email' => 'admin@alpha.test']);
+        $this->assertDatabaseHas('packages', ['name' => 'Alpha Only']);
+        tenancy()->end();
+
+        tenancy()->initialize(Tenant::findOrFail($betaApplication->tenant_id));
+        $this->assertDatabaseHas('users', ['email' => 'admin@beta.test']);
+        $this->assertDatabaseMissing('users', ['email' => 'admin@alpha.test']);
+        $this->assertDatabaseMissing('packages', ['name' => 'Alpha Only']);
+        tenancy()->end();
+    }
+
+    public function test_duplicate_organization_names_still_get_separate_tenants(): void
+    {
+        $provisioning = app(TenantProvisioningService::class);
+
+        $firstApplication = TenantApplication::create([
+            'organization_name' => 'Same ISP',
+            'slug' => 'same-isp-a1b2c3',
+            'contact_name' => 'First Admin',
+            'email' => 'first@example.test',
+            'status' => 'pending',
+        ]);
+
+        $secondApplication = TenantApplication::create([
+            'organization_name' => 'Same ISP',
+            'slug' => 'same-isp-d4e5f6',
+            'contact_name' => 'Second Admin',
+            'email' => 'second@example.test',
+            'status' => 'pending',
+        ]);
+
+        $firstApplication = $provisioning->approve($firstApplication);
+        $secondApplication = $provisioning->approve($secondApplication);
+
+        $this->assertNotSame($firstApplication->tenant_id, $secondApplication->tenant_id);
+        $this->assertNotSame($firstApplication->database_name, $secondApplication->database_name);
+    }
+
+    private function dropTestTenantDatabases(): void
+    {
+        foreach (DB::select("SHOW DATABASES LIKE 'test\\_tenant\\_%'") as $row) {
+            $database = array_values((array) $row)[0];
+
+            DB::statement('DROP DATABASE IF EXISTS `'.str_replace('`', '``', $database).'`');
+        }
     }
 }

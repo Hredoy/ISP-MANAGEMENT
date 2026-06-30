@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Tenant;
 use App\Models\TenantApplication;
 use Database\Seeders\TenantDatabaseSeeder;
 use Illuminate\Support\Facades\Artisan;
@@ -17,30 +18,30 @@ class TenantProvisioningService
             return $application;
         }
 
-        $slug = Str::slug($application->organization_name);
-        $databaseName = env('TENANT_DB_PREFIX', 'production_').$slug;
+        $slug = $application->slug;
+        $tenantId = $application->tenant_id ?: $slug;
         $subdomain = $slug.'.'.env('LANDLORD_DOMAIN', 'localhost');
 
-        if (config('database.default') !== 'mysql') {
-            throw new \RuntimeException('Tenant provisioning currently supports mysql connection only.');
-        }
-
-        DB::statement(sprintf('CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci', $databaseName));
-
-        Config::set('database.connections.tenant.database', $databaseName);
-        DB::purge('tenant');
-
-        Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--force' => true,
+        $tenant = Tenant::find($tenantId) ?? Tenant::create([
+            'id' => $tenantId,
+            'organization_name' => $application->organization_name,
+            'admin_name' => $application->contact_name,
+            'admin_email' => $application->email,
         ]);
+
+        $tenant->domains()->firstOrCreate(['domain' => $subdomain]);
+
+        if ($application->custom_domain) {
+            $tenant->domains()->firstOrCreate(['domain' => $application->custom_domain]);
+        }
 
         (new TenantDatabaseSeeder)->run($application);
 
         $application->update([
             'slug' => $slug,
             'status' => 'approved',
-            'database_name' => $databaseName,
+            'tenant_id' => $tenant->id,
+            'database_name' => $tenant->database()->getName(),
             'subdomain' => $subdomain,
             'approved_at' => now(),
         ]);
