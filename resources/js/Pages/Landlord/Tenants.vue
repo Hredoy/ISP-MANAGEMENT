@@ -33,6 +33,7 @@ const approve = (id) => {
                 <th class="py-2">Status</th>
                 <th class="py-2">Database</th>
                 <th class="py-2">Subdomain</th>
+                <th class="py-2">Custom Domain</th>
                 <th class="py-2">Action</th>
               </tr>
             </thead>
@@ -43,6 +44,7 @@ const approve = (id) => {
                 <td class="py-2 uppercase">{{ tenant.status }}</td>
                 <td class="py-2">{{ tenant.database_name || '-' }}</td>
                 <td class="py-2">{{ tenant.subdomain || '-' }}</td>
+                <td class="py-2">{{ tenant.custom_domain || '-' }}</td>
                 <td class="py-2">
                   <button
                     v-if="tenant.status === 'pending'"

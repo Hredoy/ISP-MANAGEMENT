@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Mikrotik;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mikrotik;
-use App\Services\MikrotikService;
+use App\Services\MikroTikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,9 +14,10 @@ use RouterOS\Query;
 
 class MikrotikController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         return Inertia::render('Mikrotik/Index', [
-            'routers' => Mikrotik::all()
+            'routers' => Mikrotik::all(),
         ]);
     }
 
@@ -25,7 +26,7 @@ class MikrotikController extends Controller
         return Inertia::render('Mikrotik/Create');
     }
 
-    public function store(Request $request, MikrotikService $mikrotikService): RedirectResponse
+    public function store(Request $request, MikroTikService $mikroTikService): RedirectResponse
     {
         $request->validate([
             'host' => 'required',
@@ -34,9 +35,9 @@ class MikrotikController extends Controller
         ]);
 
         // Test connection before saving
-        $test = $mikrotikService->getSystemStats($request->host, $request->username, $request->password);
+        $test = $mikroTikService->testConnection($request->host, $request->username, $request->password);
 
-        if (isset($test['error'])) {
+        if (! $test['ok']) {
             return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
         }
 
@@ -48,16 +49,16 @@ class MikrotikController extends Controller
     public function edit(Mikrotik $mikrotik): Response
     {
         return Inertia::render('Mikrotik/Edit', [
-            'router' => $mikrotik
+            'router' => $mikrotik,
         ]);
     }
 
     public function update(Request $request, Mikrotik $mikrotik): RedirectResponse
     {
         $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'host'     => 'required',
-            'port'     => 'required|numeric',
+            'name' => 'required|string|max:255',
+            'host' => 'required',
+            'port' => 'required|numeric',
             'username' => 'required',
             'password' => 'required',
         ]);
@@ -71,16 +72,17 @@ class MikrotikController extends Controller
     public function destroy(Mikrotik $mikrotik): RedirectResponse
     {
         $mikrotik->delete();
+
         return redirect()->back();
     }
 
-    public function getLiveStats(Mikrotik $mikrotik, MikrotikService $service): JsonResponse
+    public function getLiveStats(Mikrotik $mikrotik, MikroTikService $service): JsonResponse
     {
         // 1. Get System Stats (CPU, RAM, Uptime)
-        $stats = $service->getSystemStats($mikrotik->host, $mikrotik->username, $mikrotik->password);
+        $stats = $service->getSystemStats($mikrotik);
 
         // 2. Connect for specialized queries
-        $client = $service->connect($mikrotik->host, $mikrotik->username, $mikrotik->password);
+        $client = $service->connect($mikrotik);
 
         $activeUsers = 0;
         $activeIps = 0;
@@ -103,7 +105,7 @@ class MikrotikController extends Controller
 
             $trafficResponse = $client->query($trafficQuery)->read();
 
-            if (!empty($trafficResponse)) {
+            if (! empty($trafficResponse)) {
                 // Convert bits per second to Mbps (Megabits)
                 $traffic['rx'] = round($trafficResponse[0]['rx-bits-per-second'] / 1000000, 2);
                 $traffic['tx'] = round($trafficResponse[0]['tx-bits-per-second'] / 1000000, 2);

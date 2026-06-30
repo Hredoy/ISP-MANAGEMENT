@@ -15,7 +15,9 @@ return new class extends Migration
             $table->string('contact_name');
             $table->string('email');
             $table->string('phone')->nullable();
+            $table->string('custom_domain')->nullable()->unique();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->string('tenant_id')->nullable()->unique();
             $table->string('database_name')->nullable();
             $table->string('subdomain')->nullable();
             $table->timestamp('approved_at')->nullable();
