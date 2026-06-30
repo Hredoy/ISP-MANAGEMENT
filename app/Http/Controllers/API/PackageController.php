@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Package;
 use App\Models\Mikrotik;
-use App\Services\MikrotikService;
+use App\Models\Package;
+use App\Services\MikroTikService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,18 +17,18 @@ class PackageController extends Controller
     public function index(): Response
     {
         return Inertia::render('Packages/Index', [
-            'packages' => Package::with('mikrotik')->get()
+            'packages' => Package::with('mikrotik')->get(),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Packages/Create', [
-            'routers' => Mikrotik::all(['id', 'name'])
+            'routers' => Mikrotik::all(['id', 'name']),
         ]);
     }
 
-    public function store(Request $request, MikrotikService $service): RedirectResponse
+    public function store(Request $request, MikroTikService $service): RedirectResponse
     {
         $data = $request->validate([
             'name' => 'required|string',
@@ -37,11 +37,11 @@ class PackageController extends Controller
             'price' => 'required|numeric',
             'local_address' => 'nullable',
             'remote_address' => 'nullable',
-            'description' => 'nullable'
+            'description' => 'nullable',
         ]);
 
         $router = Mikrotik::findOrFail($data['mikrotik_id']);
-        $conn = $service->connect($router->host, $router->username, $router->password);
+        $conn = $service->connect($router);
 
         if ($conn) {
             $query = (new Query('/ppp/profile/add'))
@@ -53,13 +53,14 @@ class PackageController extends Controller
         }
 
         Package::create($data);
+
         return redirect()->route('dashboard.packages.index')->with('message', 'PACKAGE_CREATED_ON_ROUTER');
     }
 
-    public function destroy(Package $package, MikrotikService $service): RedirectResponse
+    public function destroy(Package $package, MikroTikService $service): RedirectResponse
     {
         $router = $package->mikrotik;
-        $conn = $service->connect($router->host, $router->username, $router->password);
+        $conn = $service->connect($router);
 
         if ($conn) {
             // Find and remove profile from MikroTik
@@ -83,14 +84,16 @@ class PackageController extends Controller
                 )->read();
             }
 
-            if (!$targetProfile) {
+            if (! $targetProfile) {
                 // The profile is already gone from the router, so just delete from DB
                 $package->delete();
+
                 return back()->with('message', 'DB_SYNCED: Profile was already missing from Router.');
             }
         }
 
         $package->delete();
+
         return back()->with('message', 'PACKAGE_REMOVED');
     }
 }
