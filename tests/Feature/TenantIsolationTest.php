@@ -2,6 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\SetTenantDatabase;
+use App\Models\TenantApplication;
+use Database\Seeders\TenantDatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Models\Package;
 use App\Models\Tenant;
 use App\Models\TenantApplication;

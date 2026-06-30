@@ -4,6 +4,11 @@ namespace App\Services;
 
 use App\Models\Tenant;
 use App\Models\TenantApplication;
+use Database\Seeders\TenantDatabaseSeeder;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TenantProvisioningService
 {
@@ -29,6 +34,8 @@ class TenantProvisioningService
         if ($application->custom_domain) {
             $tenant->domains()->firstOrCreate(['domain' => $application->custom_domain]);
         }
+
+        (new TenantDatabaseSeeder)->run($application);
 
         $application->update([
             'slug' => $slug,
