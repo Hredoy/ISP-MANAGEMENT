@@ -44,7 +44,7 @@ class MikrotikController extends Controller
             return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
         }
 
-        Mikrotik::create($request->all());
+        Mikrotik::create($data);
 
         return redirect()->route('dashboard.mikrotik.index');
     }
@@ -80,9 +80,9 @@ class MikrotikController extends Controller
         return redirect()->back();
     }
 
-    public function checkConnection(Mikrotik $mikrotik, MikrotikService $service): JsonResponse
+    public function checkConnection(Mikrotik $mikrotik, MikroTikService $service): JsonResponse
     {
-        $stats = $service->getSystemStats($mikrotik->host, $mikrotik->username, $mikrotik->password, $mikrotik->port);
+        $stats = $service->getSystemStats($mikrotik);
 
         if (isset($stats['error'])) {
             return response()->json([
@@ -107,7 +107,6 @@ class MikrotikController extends Controller
 
         // 2. Connect for specialized queries
         $client = $service->connect($mikrotik);
-
 
         $activeUsers = 0;
         $activeIps = 0;
