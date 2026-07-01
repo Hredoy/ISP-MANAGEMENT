@@ -29,14 +29,34 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $enabledModules = [];
+        $tenantStatus = null;
+
+        if (tenancy()->initialized && tenant()) {
+            $tenantStatus = tenant()->status;
+            $enabledModules = tenant()->modules()
+                ->where('enabled', true)
+                ->whereHas('module', fn ($query) => $query->where('is_active', true))
+                ->with('module:id,slug,name')
+                ->get()
+                ->pluck('module.slug')
+                ->values()
+                ->all();
+        }
+
         return [
             ...parent::share($request),
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
+                'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'tenant' => [
+                'status' => $tenantStatus,
+                'enabledModules' => $enabledModules,
             ],
         ];
     }

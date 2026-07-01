@@ -1,65 +1,76 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import LandlordLayout from '@/Layouts/LandlordLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
+import { ShieldOff, ToggleLeft, ToggleRight } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 const props = defineProps({
-  applications: {
-    type: Array,
-    default: () => [],
-  },
+  tenants: { type: Array, default: () => [] },
+  modules: { type: Array, default: () => [] },
 });
 
-const approve = (id) => {
-  router.post(route('landlord.tenants.approve', id));
+const statusMessages = ref({});
+const enabledSlugs = (tenant) => tenant.modules?.filter((item) => item.enabled).map((item) => item.module?.slug) ?? [];
+const tenantHasModule = (tenant, slug) => enabledSlugs(tenant).includes(slug);
+
+const toggleModule = (tenant, slug) => {
+  const next = tenantHasModule(tenant, slug)
+    ? enabledSlugs(tenant).filter((item) => item !== slug)
+    : [...enabledSlugs(tenant), slug];
+
+  router.patch(route('landlord.tenants.modules.update', tenant.id), { modules: next }, { preserveScroll: true });
+};
+
+const updateStatus = (tenant, status) => {
+  router.patch(route('landlord.tenants.status.update', tenant.id), {
+    status,
+    message: statusMessages.value[tenant.id] ?? '',
+  }, { preserveScroll: true });
 };
 </script>
 
 <template>
-  <Head title="Landlord Tenants" />
+  <Head title="Tenant Controls" />
+  <LandlordLayout>
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-gray-950">Tenant controls</h3>
+        <p class="text-sm text-gray-500">{{ tenants.length }} tenants</p>
+      </div>
 
-  <AuthenticatedLayout>
-    <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">Landlord Tenant Approvals</h2>
-    </template>
+      <div v-for="tenant in tenants" :key="tenant.id" class="rounded border border-gray-200 bg-white p-5">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h4 class="text-lg font-black text-gray-950">{{ tenant.organization_name || tenant.id }}</h4>
+            <p class="text-sm text-gray-500">{{ tenant.admin_email }} · {{ tenant.status }}</p>
+            <p class="mt-1 text-xs text-gray-500">DB {{ tenant.database_name || '-' }}: {{ tenant.database_status }} · Domain: {{ tenant.domain_status }}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="rounded border px-3 py-2 text-sm font-semibold" @click="updateStatus(tenant, 'active')">Activate</button>
+            <button class="rounded border px-3 py-2 text-sm font-semibold" @click="updateStatus(tenant, 'inactive')">Deactivate</button>
+            <button class="inline-flex items-center gap-2 rounded bg-red-600 px-3 py-2 text-sm font-semibold text-white" @click="updateStatus(tenant, 'suspended')">
+              <ShieldOff class="h-4 w-4" /> Suspend
+            </button>
+          </div>
+        </div>
 
-    <div class="py-8">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow sm:rounded-lg p-6 overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">Organization</th>
-                <th class="py-2">Contact</th>
-                <th class="py-2">Status</th>
-                <th class="py-2">Database</th>
-                <th class="py-2">Subdomain</th>
-                <th class="py-2">Custom Domain</th>
-                <th class="py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="tenant in applications" :key="tenant.id" class="border-b">
-                <td class="py-2">{{ tenant.organization_name }}</td>
-                <td class="py-2">{{ tenant.contact_name }} ({{ tenant.email }})</td>
-                <td class="py-2 uppercase">{{ tenant.status }}</td>
-                <td class="py-2">{{ tenant.database_name || '-' }}</td>
-                <td class="py-2">{{ tenant.subdomain || '-' }}</td>
-                <td class="py-2">{{ tenant.custom_domain || '-' }}</td>
-                <td class="py-2">
-                  <button
-                    v-if="tenant.status === 'pending'"
-                    @click="approve(tenant.id)"
-                    class="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                  >
-                    Approve
-                  </button>
-                  <span v-else class="text-gray-500">No action</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <input v-model="statusMessages[tenant.id]" class="mt-3 w-full rounded border-gray-300 text-sm" placeholder="Suspension message">
+
+        <div class="mt-4 grid gap-2 md:grid-cols-4">
+          <button v-for="module in modules" :key="module.slug" class="flex items-center justify-between rounded border border-gray-200 px-3 py-2 text-sm font-semibold" @click="toggleModule(tenant, module.slug)">
+            <span>{{ module.name }}</span>
+            <ToggleRight v-if="tenantHasModule(tenant, module.slug)" class="h-5 w-5 text-emerald-600" />
+            <ToggleLeft v-else class="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
+
+        <div v-if="tenant.provisioning_logs?.length" class="mt-4 grid gap-2 text-xs md:grid-cols-4">
+          <div v-for="log in tenant.provisioning_logs" :key="log.id" class="rounded bg-gray-50 p-2">
+            <p class="font-bold uppercase text-gray-600">{{ log.step }} · {{ log.status }}</p>
+            <p class="mt-1 text-gray-500">{{ log.message }}</p>
+          </div>
         </div>
       </div>
-    </div>
-  </AuthenticatedLayout>
+    </section>
+  </LandlordLayout>
 </template>

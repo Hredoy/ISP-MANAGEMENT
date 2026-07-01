@@ -8,16 +8,20 @@ use App\Services\MikroTikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use RouterOS\Query;
+use Stancl\Tenancy\Database\Models\Domain;
 
 class MikrotikController extends Controller
 {
     public function index()
     {
+        $this->ensureTenantFromRequest();
+
         return Inertia::render('Mikrotik/Index', [
-            'routers' => Mikrotik::all(),
+            'routers' => $this->query()->get(),
         ]);
     }
 
@@ -28,6 +32,8 @@ class MikrotikController extends Controller
 
     public function store(Request $request, MikroTikService $mikroTikService): RedirectResponse
     {
+        $this->ensureTenantFromRequest();
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'host' => 'required|string|max:255',
@@ -44,7 +50,16 @@ class MikrotikController extends Controller
             return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
         }
 
-        Mikrotik::create($data);
+        if ($this->shouldUseTenantConnection()) {
+            DB::connection('tenant')->table('mikrotiks')->insert([
+                ...$data,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            Mikrotik::create($data);
+        }
 
         return redirect()->route('dashboard.mikrotik.index');
     }
@@ -147,5 +162,39 @@ class MikrotikController extends Controller
             'rx' => $traffic['rx'],
             'tx' => $traffic['tx'],
         ]);
+    }
+
+    private function query()
+    {
+        return tenancy()->initialized ? Mikrotik::on('tenant') : Mikrotik::query();
+    }
+
+    private function shouldUseTenantConnection(): bool
+    {
+        if (tenancy()->initialized) {
+            return true;
+        }
+
+        $host = request()->getHost();
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+        $centralDomains = array_values(array_unique(array_filter([
+            $appHost,
+            ...array_map('trim', explode(',', env('CENTRAL_DOMAINS', '127.0.0.1,localhost,'.env('LANDLORD_DOMAIN', 'localhost')))),
+        ])));
+
+        return ! in_array($host, $centralDomains, true);
+    }
+
+    private function ensureTenantFromRequest(): void
+    {
+        if (tenancy()->initialized) {
+            return;
+        }
+
+        $domain = Domain::where('domain', request()->getHost())->first();
+
+        if ($domain) {
+            tenancy()->initialize($domain->tenant);
+        }
     }
 }

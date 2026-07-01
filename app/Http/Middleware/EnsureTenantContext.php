@@ -11,7 +11,7 @@ class EnsureTenantContext
     public function handle(Request $request, Closure $next): Response
     {
         if (! tenancy()->initialized) {
-            return redirect()->route('landlord.tenants.index');
+            return redirect()->route('landlord.dashboard');
         }
 
         return $next($request);

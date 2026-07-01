@@ -1,5 +1,5 @@
 <script setup>
-import {ref, onMounted, watch} from 'vue';
+import {ref, onMounted, computed} from 'vue';
 import {Link, usePage} from '@inertiajs/vue3';
 import { navItems} from "@/Layouts/Nevigations/VerticalNavigation.js";
 import {
@@ -24,6 +24,16 @@ const toggleSubMenu = (name) => {
 };
 const toaster = createToaster();
 const page = usePage();
+const enabledModules = computed(() => page.props.tenant?.enabledModules ?? []);
+const canShow = (item) => !item.module || enabledModules.value.includes(item.module);
+const visibleNavItems = computed(() => navItems
+    .filter(canShow)
+    .map((item) => ({
+        ...item,
+        children: item.children?.filter(canShow),
+    }))
+    .filter((item) => !item.children || item.children.length > 0)
+);
 
 onMounted(() => {
     if (localStorage.theme === 'light') {
@@ -55,7 +65,7 @@ onMounted(() => {
                 </div>
 
                 <nav class="flex-1 mt-6 px-3 space-y-2">
-                    <div v-for="item in navItems" :key="item.name">
+                    <div v-for="item in visibleNavItems" :key="item.name">
                         <Link v-if="!item.children" :href="item.href"
                               class="flex items-center p-3 rounded border transition-all"
                               :class="$page.component === item.component ? 'bg-primary text-black' : 'text-primary hover:bg-primary/10 border-transparent'">

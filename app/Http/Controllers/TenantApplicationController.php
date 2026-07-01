@@ -2,57 +2,47 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOrganizationApplicationRequest;
+use App\Models\LandlordAuditLog;
+use App\Models\Module;
 use App\Models\TenantApplication;
 use App\Services\TenantProvisioningService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TenantApplicationController extends Controller
 {
-    public function create(): Response
+    public function create(TenantProvisioningService $provisioningService): Response
     {
-        return Inertia::render('Tenant/Apply');
+        $provisioningService->ensureModulesSeeded();
+
+        return Inertia::render('Tenant/Apply', [
+            'modules' => Module::where('is_active', true)->orderBy('sort_order')->get(['name', 'slug']),
+        ]);
     }
 
-    public function store(Request $request, TenantProvisioningService $provisioningService): RedirectResponse
+    public function store(StoreOrganizationApplicationRequest $request): RedirectResponse
     {
-        if ($request->filled('custom_domain')) {
-            $request->merge([
-                'custom_domain' => Str::lower(trim(preg_replace('#^https?://#', '', $request->string('custom_domain')->toString()), " \t\n\r\0\x0B/")),
-            ]);
-        }
-
-        $centralDomains = array_filter(array_map('trim', explode(',', env('CENTRAL_DOMAINS', '127.0.0.1,localhost,'.env('LANDLORD_DOMAIN', 'localhost')))));
-
-        $validated = $request->validate([
-            'organization_name' => ['required', 'string', 'max:255'],
-            'contact_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'custom_domain' => [
-                'nullable',
-                'string',
-                'max:255',
-                'regex:/^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,63}$/',
-                Rule::notIn($centralDomains),
-                'unique:tenant_applications,custom_domain',
-                'unique:domains,domain',
-            ],
-        ]);
+        $validated = $request->validated();
 
         $application = TenantApplication::create([
             ...$validated,
+            'contact_name' => $validated['owner_name'],
+            'plan' => $validated['package_request'] ?? $validated['plan'] ?? 'starter',
             'slug' => $this->uniqueSlug($validated['organization_name']),
             'status' => 'pending',
         ]);
 
-        $application = $provisioningService->approve($application);
+        LandlordAuditLog::create([
+            'tenant_application_id' => $application->id,
+            'action' => 'application_submitted',
+            'message' => 'Organization application submitted.',
+            'properties' => ['source' => $request->user() ? 'landlord' : 'public'],
+        ]);
 
-        return redirect()->back()->with('success', 'Organization created. Tenant database and domains are ready: '.$application->subdomain);
+        return redirect()->back()->with('success', 'Application submitted. The landlord team will review it shortly.');
     }
 
     private function uniqueSlug(string $organizationName): string
