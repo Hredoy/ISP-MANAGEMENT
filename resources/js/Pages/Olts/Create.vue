@@ -1,7 +1,6 @@
 <script setup>
 import ISPLayout from '@/Layouts/ISPLayout.vue';
 import { useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
 
 defineOptions({ layout: ISPLayout });
 
@@ -14,8 +13,6 @@ const form = useForm({
     password: '',
     snmp_community: '',
 });
-
-const isSnmp = computed(() => form.vendor === 'vsol');
 
 const submit = () => form.post('/dashboard/olts');
 </script>
@@ -34,7 +31,9 @@ const submit = () => form.post('/dashboard/olts');
                 <select v-model="form.vendor" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
                     <option value="huawei">Huawei</option>
                     <option value="zte">ZTE</option>
+                    <option value="bdcom">BDCOM P3310</option>
                     <option value="vsol">VSOL (SNMP)</option>
+                    <option value="auto">Auto Detect (SNMP sysDescr)</option>
                 </select>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -47,24 +46,20 @@ const submit = () => form.post('/dashboard/olts');
                     <input v-model="form.port" type="number" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
                 </div>
             </div>
-            <template v-if="!isSnmp">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] mb-1">USER_ID</label>
-                        <input v-model="form.username" type="text" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] mb-1">PASS_KEY</label>
-                        <input v-model="form.password" type="password" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
-                    </div>
-                </div>
-            </template>
-            <template v-else>
+            <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-[10px] mb-1">SNMP_COMMUNITY</label>
-                    <input v-model="form.snmp_community" type="text" placeholder="private" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
+                    <label class="block text-[10px] mb-1">USER_ID</label>
+                    <input v-model="form.username" type="text" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
                 </div>
-            </template>
+                <div>
+                    <label class="block text-[10px] mb-1">PASS_KEY</label>
+                    <input v-model="form.password" type="password" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] mb-1">SNMP_COMMUNITY</label>
+                <input v-model="form.snmp_community" type="text" placeholder="public/private" class="w-full bg-surface border border-primary/40 p-2 text-primary outline-none">
+            </div>
 
             <button :disabled="form.processing" class="w-full bg-primary text-black font-bold py-3 uppercase text-xs mt-4">
                 {{ form.processing ? 'SYNCING...' : 'ESTABLISH_CONNECTION' }}

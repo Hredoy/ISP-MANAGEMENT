@@ -13,6 +13,8 @@ use App\Http\Controllers\LandlordTenantController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantApplicationController;
 use App\Http\Controllers\TenantFrontendController;
+use App\Http\Controllers\TenantHrmController;
+use App\Http\Controllers\TenantRolePermissionController;
 use App\Http\Controllers\TenantWebsiteController;
 use App\Http\Middleware\EnsureTenantContext;
 use App\Models\Module;
@@ -119,6 +121,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('olts', OltController::class)->except('show')->middleware('tenant.module:olt');
         Route::post('olts/{olt}/check-connection', [OltController::class, 'checkConnection'])
             ->middleware('tenant.module:olt')->name('olts.check-connection');
+        Route::post('olts/{olt}/detect-vendor', [OltController::class, 'detectVendor'])
+            ->middleware('tenant.module:olt')->name('olts.detect-vendor');
+        Route::post('olts/{olt}/sync-onus', [OltController::class, 'syncOnus'])
+            ->middleware('tenant.module:olt')->name('olts.sync-onus');
+        Route::get('olts/{olt}/onus', [OltController::class, 'onus'])
+            ->middleware('tenant.module:olt')->name('olts.onus');
         // --- OLT DEVICE MANAGEMENT ---
 
         // --- INTEGRATIONS (SMS GATEWAYS) ---
@@ -131,6 +139,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('sms-gateways/{smsGateway}/test', [IntegrationController::class, 'testSmsGateway'])->name('sms-gateways.test');
         });
         // --- INTEGRATIONS (SMS GATEWAYS) ---
+
+        // --- HRM + TENANT ROLE PERMISSIONS ---
+        Route::prefix('hrm')->name('hrm.')->middleware('tenant.module:hrm')->group(function () {
+            Route::get('/', [TenantHrmController::class, 'index'])
+                ->middleware('tenant.permission:hrm.view')->name('index');
+            Route::post('employees', [TenantHrmController::class, 'storeEmployee'])
+                ->middleware('tenant.permission:employees.create')->name('employees.store');
+            Route::patch('employees/{employee}', [TenantHrmController::class, 'updateEmployee'])
+                ->middleware('tenant.permission:employees.edit')->name('employees.update');
+            Route::delete('employees/{employee}', [TenantHrmController::class, 'archiveEmployee'])
+                ->middleware('tenant.permission:employees.delete')->name('employees.archive');
+            Route::post('employees/{employee}/documents', [TenantHrmController::class, 'storeDocument'])
+                ->middleware('tenant.permission:employee_documents.create')->name('employees.documents.store');
+            Route::post('setup/{type}', [TenantHrmController::class, 'storeSetup'])
+                ->middleware('tenant.permission:hrm.create')->name('setup.store');
+        });
+
+        Route::prefix('roles-permissions')->name('roles-permissions.')->middleware(['tenant.module:hrm', 'tenant.permission:role_permissions.view'])->group(function () {
+            Route::get('/', [TenantRolePermissionController::class, 'index'])->name('index');
+            Route::patch('roles/{role}', [TenantRolePermissionController::class, 'update'])
+                ->middleware('tenant.permission:role_permissions.edit')->name('roles.update');
+        });
+        // --- HRM + TENANT ROLE PERMISSIONS ---
 
         // --- FUTURE: SUBSCRIBERS & BILLING ---
         // Route::resource('subscribers', SubscriberController::class);

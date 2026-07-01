@@ -26,6 +26,28 @@ const checkConnection = async (olt) => {
         checks[olt.id] = error.response?.data?.message ?? 'OFFLINE';
     }
 };
+
+const detectVendor = async (olt) => {
+    checks[olt.id] = 'DETECTING_VENDOR';
+
+    try {
+        const { data } = await axios.post(`/dashboard/olts/${olt.id}/detect-vendor`);
+        checks[olt.id] = `VENDOR_${data.vendor?.toUpperCase()}`;
+    } catch (error) {
+        checks[olt.id] = error.response?.data?.message ?? 'DETECT_FAILED';
+    }
+};
+
+const syncOnus = async (olt) => {
+    checks[olt.id] = 'SYNCING_ONUS';
+
+    try {
+        const { data } = await axios.post(`/dashboard/olts/${olt.id}/sync-onus`);
+        checks[olt.id] = `${data.synced ?? 0}_ONUS_SYNCED`;
+    } catch (error) {
+        checks[olt.id] = error.response?.data?.message ?? 'ONU_SYNC_FAILED';
+    }
+};
 </script>
 
 <template>
@@ -45,6 +67,7 @@ const checkConnection = async (olt) => {
                     <th class="p-4">IDENTIFIER</th>
                     <th class="p-4">VENDOR</th>
                     <th class="p-4">IP_ADDRESS</th>
+                    <th class="p-4">ONUS</th>
                     <th class="p-4">STATUS</th>
                     <th class="p-4 text-right">COMMANDS</th>
                 </tr>
@@ -54,6 +77,14 @@ const checkConnection = async (olt) => {
                     <td class="p-4 font-bold">{{ node.name }}</td>
                     <td class="p-4 text-primary/70 uppercase">{{ node.vendor }}</td>
                     <td class="p-4 text-primary/70">{{ node.host }}:{{ node.port }}</td>
+                    <td class="p-4 text-primary/70">
+                        <p class="font-bold text-primary">{{ node.onus_count || 0 }}</p>
+                        <div v-if="node.onus?.length" class="mt-2 space-y-1">
+                            <p v-for="onu in node.onus" :key="onu.id" class="text-[9px]">
+                                {{ onu.signal_label || '⚪ unknown' }} / {{ onu.serial_number }} / RX {{ onu.rx_dbm ?? '-' }} dBm
+                            </p>
+                        </div>
+                    </td>
                     <td class="p-4">
                             <span class="flex items-center text-primary italic whitespace-nowrap">
                                 <Activity :size="12" class="mr-2 animate-pulse" /> {{ checks[node.id] || 'READY' }}
@@ -69,6 +100,12 @@ const checkConnection = async (olt) => {
                             </button>
                             <button @click="checkConnection(node)" class="text-primary/70 hover:text-primary" title="Check connection">
                                 <Cable :size="15" />
+                            </button>
+                            <button @click="detectVendor(node)" class="text-primary/70 hover:text-primary text-[10px] font-bold" title="Auto-detect vendor">
+                                AUTO
+                            </button>
+                            <button @click="syncOnus(node)" class="text-primary/70 hover:text-primary text-[10px] font-bold" title="Sync ONUs">
+                                ONU
                             </button>
                         </div>
                     </td>

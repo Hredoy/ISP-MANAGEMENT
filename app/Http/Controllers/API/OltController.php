@@ -13,12 +13,12 @@ use Inertia\Response;
 
 class OltController extends Controller
 {
-    private const VENDORS = ['huawei', 'zte', 'vsol'];
+    private const VENDORS = ['auto', 'huawei', 'zte', 'bdcom', 'vsol'];
 
     public function index(): Response
     {
         return Inertia::render('Olts/Index', [
-            'olts' => Olt::orderBy('name')->get(),
+            'olts' => Olt::withCount('onus')->with(['onus' => fn ($query) => $query->latest('last_seen_at')->limit(5)])->orderBy('name')->get(),
         ]);
     }
 
@@ -94,5 +94,26 @@ class OltController extends Controller
         $olt->forceFill(['last_ping' => now()])->save();
 
         return response()->json($result);
+    }
+
+    public function detectVendor(Olt $olt, OltService $service): JsonResponse
+    {
+        $vendor = $service->detectVendor($olt);
+
+        return response()->json(['ok' => true, 'vendor' => $vendor]);
+    }
+
+    public function syncOnus(Olt $olt, OltService $service): JsonResponse
+    {
+        $result = $service->syncOnus($olt);
+
+        return response()->json($result);
+    }
+
+    public function onus(Olt $olt): JsonResponse
+    {
+        return response()->json([
+            'onus' => $olt->onus()->with('client:id,full_name,pppoe_username')->latest('last_seen_at')->get(),
+        ]);
     }
 }

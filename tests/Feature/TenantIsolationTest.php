@@ -90,12 +90,4 @@ class TenantIsolationTest extends TestCase
         DB::reconnect('tenant');
     }
 
-    private function dropTestTenantDatabases(): void
-    {
-        foreach (DB::select("SHOW DATABASES LIKE 'test\\_tenant\\_%'") as $row) {
-            $database = array_values((array) $row)[0];
-
-            DB::statement('DROP DATABASE IF EXISTS `'.str_replace('`', '``', $database).'`');
-        }
-    }
 }

@@ -20,7 +20,7 @@ class TenantDatabaseSeederTest extends TestCase
         parent::setUp();
 
         $this->dropTenantDatabase();
-        DB::statement('CREATE DATABASE `test_tenant_seeder` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+        $this->createIsolatedDatabase('test_tenant_seeder');
 
         Config::set('database.connections.tenant', array_replace(Config::get('database.connections.mysql'), [
             'database' => 'test_tenant_seeder',
@@ -82,6 +82,6 @@ class TenantDatabaseSeederTest extends TestCase
 
     private function dropTenantDatabase(): void
     {
-        DB::statement('DROP DATABASE IF EXISTS `test_tenant_seeder`');
+        $this->dropIsolatedDatabase('test_tenant_seeder');
     }
 }

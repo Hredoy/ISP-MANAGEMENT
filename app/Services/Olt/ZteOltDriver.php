@@ -2,7 +2,6 @@
 
 namespace App\Services\Olt;
 
-use App\Models\Olt;
 use App\Services\Olt\Support\TelnetClient;
 use phpseclib3\Net\SSH2;
 use Throwable;
@@ -12,19 +11,48 @@ use Throwable;
  * Command syntax follows ZTE's standard GPON ONU binding flow;
  * verify against the target firmware version before production use.
  */
-class ZteOltDriver implements OltDriverInterface
+class ZteOltDriver extends AbstractSnmpOltDriver
 {
-    public function __construct(private readonly Olt $olt) {}
+    private const OID_ONU_SERIAL = '1.3.6.1.4.1.3902.1082.500.10.2.3.3.1.6';
+    private const OID_ONU_STATUS = '1.3.6.1.4.1.3902.1082.500.10.2.3.8.1.4';
+    private const OID_ONU_MAC = '1.3.6.1.4.1.3902.1082.500.10.2.3.3.1.5';
+    private const OID_ONU_RX_POWER = '1.3.6.1.4.1.3902.1082.500.10.2.3.10.1.2';
+    private const OID_ONU_TX_POWER = '1.3.6.1.4.1.3902.1082.500.10.2.3.10.1.3';
 
-    public function testConnection(): array
+    public function listOnus(): array
     {
-        try {
-            $this->withSession(fn () => null);
+        $serials = $this->snmp()->walk(self::OID_ONU_SERIAL);
+        $statuses = $this->snmp()->walk(self::OID_ONU_STATUS);
+        $macs = $this->snmp()->walk(self::OID_ONU_MAC);
+        $onus = [];
 
-            return ['ok' => true, 'message' => 'CONNECTION_OK'];
-        } catch (Throwable $e) {
-            return ['ok' => false, 'message' => $e->getMessage()];
+        foreach ($serials as $oid => $serial) {
+            [$ponPort, $onuId] = $this->parseOnuIndex($oid);
+            $optical = $this->getOpticalInfo($ponPort, $onuId);
+            $rx = $optical['rx_dbm'] ?? null;
+
+            $onus[] = [
+                'vendor' => 'zte',
+                'pon_port' => $ponPort,
+                'onu_id' => $onuId,
+                'serial_number' => $serial,
+                'mac_address' => $this->valueForIndex($macs, $ponPort, $onuId),
+                'status' => $this->normalizeStatus($this->valueForIndex($statuses, $ponPort, $onuId)),
+                'rx_dbm' => $rx,
+                'tx_dbm' => $optical['tx_dbm'] ?? null,
+                'signal' => $this->signalColor($rx),
+            ];
         }
+
+        return $onus;
+    }
+
+    public function getOpticalInfo(string $ponPort, string $onuId): array
+    {
+        return [
+            'rx_dbm' => $this->dbm($this->snmp()->get(self::OID_ONU_RX_POWER.'.'.$ponPort.'.'.$onuId)),
+            'tx_dbm' => $this->dbm($this->snmp()->get(self::OID_ONU_TX_POWER.'.'.$ponPort.'.'.$onuId)),
+        ];
     }
 
     public function bindOnu(array $params): array
@@ -115,5 +143,26 @@ class ZteOltDriver implements OltDriverInterface
         }
 
         return $output;
+    }
+
+    private function valueForIndex(array $values, string $ponPort, string $onuId): ?string
+    {
+        foreach ($values as $oid => $value) {
+            if (str_ends_with($oid, ".{$ponPort}.{$onuId}")) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeStatus(?string $status): string
+    {
+        return match ((string) $status) {
+            '1' => 'online',
+            '2' => 'offline',
+            '3' => 'los',
+            default => $status ?: 'unknown',
+        };
     }
 }

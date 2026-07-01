@@ -25,7 +25,9 @@ const toggleSubMenu = (name) => {
 const toaster = createToaster();
 const page = usePage();
 const enabledModules = computed(() => page.props.tenant?.enabledModules ?? []);
-const canShow = (item) => !item.module || enabledModules.value.includes(item.module);
+const userPermissions = computed(() => page.props.auth?.permissions ?? []);
+const canShow = (item) => (!item.module || enabledModules.value.includes(item.module))
+    && (!item.permission || userPermissions.value.includes(item.permission));
 const visibleNavItems = computed(() => navItems
     .filter(canShow)
     .map((item) => ({
