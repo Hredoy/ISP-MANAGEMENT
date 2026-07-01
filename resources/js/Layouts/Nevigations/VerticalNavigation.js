@@ -11,6 +11,9 @@ import {
     Globe,
     Map,
     UserPlus,
+    MonitorCog,
+    Cable,
+    Plug,
 } from 'lucide-vue-next';
 export const navItems = [
     { name: 'DASHBOARD', href: '/dashboard', icon: LayoutDashboard, component: 'Dashboard' },
@@ -40,9 +43,19 @@ export const navItems = [
             { name: 'ADD_NEW', href: '/dashboard/mikrotik/create', icon: Plus, component: 'Mikrotik/Create', module: 'mikrotik' },
         ]
     },
+    {
+        name: 'OLT_DEVICES',
+        module: 'olt',
+        icon: Cable,
+        children: [
+            { name: 'LIST_OLTS', href: '/dashboard/olts', icon: List, component: 'Olts/Index', module: 'olt' },
+            { name: 'ADD_NEW_OLT', href: '/dashboard/olts/create', icon: Plus, component: 'Olts/Create', module: 'olt' },
+        ]
+    },
     { name: 'SUBSCRIBERS', href: '/dashboard/subscribers', icon: Users, component: 'Subscribers/Index' },
     { name: 'PACKAGES', href: '/dashboard/packages', icon: Zap, component: 'Packages/Index', module: 'packages' },
+    { name: 'INTEGRATIONS', href: '/dashboard/integrations', icon: Plug, component: 'Integrations/Index', module: 'sms' },
+    { name: 'FRONTEND', href: '/dashboard/frontend', icon: MonitorCog, component: 'Tenant/FrontendAdmin', module: 'settings' },
     { name: 'BILLING', href: '/dashboard/billing', icon: CreditCard, component: 'Billing/Index', module: 'billing' },
-    { name: 'LANDLORD', href: '/landlord/dashboard', icon: Settings, component: 'Landlord/Dashboard' },
     { name: 'SETTINGS', href: '/dashboard/settings', icon: Settings, component: 'Settings', module: 'settings' },
 ];

@@ -110,6 +110,39 @@ class MikroTikService
         return $this->clientFor($router)->query($query)->read();
     }
 
+    public function updatePPPoEUser(Mikrotik|Client $router, string $currentUsername, array $data): bool
+    {
+        $client = $this->clientFor($router);
+        $secret = $this->findPPPoESecret($client, $currentUsername);
+
+        if (! $secret) {
+            return false;
+        }
+
+        $query = (new Query('/ppp/secret/set'))->equal('.id', $secret['.id']);
+
+        $fields = [
+            'name' => $data['name'] ?? $data['pppoe_username'] ?? null,
+            'password' => $data['password'] ?? $data['pppoe_password'] ?? null,
+            'profile' => $data['profile'] ?? null,
+            'comment' => $data['comment'] ?? null,
+        ];
+
+        foreach ($fields as $field => $value) {
+            if ($value !== null) {
+                $query->equal($field, (string) $value);
+            }
+        }
+
+        if (array_key_exists('disabled', $data)) {
+            $query->equal('disabled', $data['disabled'] ? 'yes' : 'no');
+        }
+
+        $client->query($query)->read();
+
+        return true;
+    }
+
     public function removePPPoEUser(Mikrotik|Client $router, string $username): bool
     {
         $client = $this->clientFor($router);
@@ -163,6 +196,36 @@ class MikroTikService
         return $this->read($this->clientFor($router), '/queue/simple/print');
     }
 
+    /**
+     * Creates or updates a /queue/simple entry targeting a static IP.
+     * Only meaningful when the client has a fixed target address — PPPoE
+     * clients on a dynamic pool are already rate-limited via their PPP
+     * profile's rate-limit (see PackageController), so callers should skip
+     * this when no static target is available.
+     */
+    public function addSimpleQueue(Mikrotik|Client $router, string $name, string $target, string $maxLimit): array
+    {
+        $client = $this->clientFor($router);
+
+        $existing = $client->query((new Query('/queue/simple/print'))
+            ->equal('.proplist', '.id,name')
+            ->equal('name', $name))->read();
+
+        if (! empty($existing[0]['.id'])) {
+            $query = (new Query('/queue/simple/set'))
+                ->equal('.id', $existing[0]['.id'])
+                ->equal('target', $target)
+                ->equal('max-limit', $maxLimit);
+        } else {
+            $query = (new Query('/queue/simple/add'))
+                ->equal('name', $name)
+                ->equal('target', $target)
+                ->equal('max-limit', $maxLimit);
+        }
+
+        return $client->query($query)->read();
+    }
+
     public function getHotspotUsers(Mikrotik|Client $router): array
     {
         return $this->read($this->clientFor($router), '/ip/hotspot/user/print');
@@ -193,7 +256,7 @@ class MikroTikService
                 'monthly_bill' => 0,
                 'full_address' => 'Synced from MikroTik',
                 'expiry_date' => now()->addMonth()->toDateString(),
-                'status' => in_array($secret['disabled'] ?? 'false', ['true', 'yes'], true) ? 'Inactive' : 'Active',
+                'status' => in_array($secret['disabled'] ?? 'false', ['true', 'yes'], true) ? 'Suspended' : 'Active',
                 'additional_notes' => 'AUTO_SYNCED_FROM_MIKROTIK',
             ]);
 

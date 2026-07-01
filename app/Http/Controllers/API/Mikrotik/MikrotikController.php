@@ -8,7 +8,6 @@ use App\Services\MikroTikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use RouterOS\Query;
@@ -44,19 +43,14 @@ class MikrotikController extends Controller
         ]);
 
         // Test connection before saving
-        $test = $mikroTikService->testConnection($request->host, $request->username, $request->password);
+        $test = $mikroTikService->testConnection($request->host, $request->username, $request->password, (int) $request->port);
 
         if (! $test['ok']) {
             return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
         }
 
         if ($this->shouldUseTenantConnection()) {
-            DB::connection('tenant')->table('mikrotiks')->insert([
-                ...$data,
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            Mikrotik::on('tenant')->create([...$data, 'is_active' => true]);
         } else {
             Mikrotik::create($data);
         }

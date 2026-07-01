@@ -466,6 +466,7 @@ class TenantProvisioningService
             ['name' => 'Billing', 'slug' => 'billing'],
             ['name' => 'Payments', 'slug' => 'payments'],
             ['name' => 'MikroTik', 'slug' => 'mikrotik'],
+            ['name' => 'OLT', 'slug' => 'olt'],
             ['name' => 'Support Tickets', 'slug' => 'support-tickets'],
             ['name' => 'SMS', 'slug' => 'sms'],
             ['name' => 'Reports', 'slug' => 'reports'],

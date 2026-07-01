@@ -12,12 +12,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [
-            \App\Http\Middleware\SetTenantDatabase::class,
-            \App\Http\Middleware\EnsureTenantIsActive::class,
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
+        $middleware->web(
+            prepend: [
+                \App\Http\Middleware\SetTenantDatabase::class,
+            ],
+            append: [
+                \App\Http\Middleware\EnsureTenantIsActive::class,
+                \App\Http\Middleware\HandleInertiaRequests::class,
+                \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            ],
+        );
 
         $middleware->alias([
             'tenant.module' => \App\Http\Middleware\EnsureTenantModuleEnabled::class,

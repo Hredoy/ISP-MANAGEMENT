@@ -22,6 +22,8 @@
     },
     "dependencies": {
         "@meforma/vue-toaster": "^1.3.0",
+        "@tanstack/vue-table": "^8.21.3",
+        "@tanstack/vue-virtual": "^3.13.31",
         "apexcharts": "^5.3.6",
         "lucide-vue-next": "^0.563.0",
         "vue3-apexcharts": "^1.10.0"

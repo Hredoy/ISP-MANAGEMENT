@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreClientRequest;
 use App\Models\Client;
 use App\Models\Mikrotik;
+use App\Models\Olt;
+use App\Models\Package;
 use App\Models\SubZone;
 use App\Models\Zone;
 use App\Services\MikroTikService;
@@ -12,20 +15,31 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use RouterOS\Exceptions\ClientException;
-use RouterOS\Exceptions\ConfigException;
-use RouterOS\Exceptions\QueryException;
-use RouterOS\Query;
+use Throwable;
 
 class ClientController extends Controller
 {
-    public function index(): Response
+    private const SORTABLE = ['full_name', 'pppoe_username', 'package_name', 'monthly_bill', 'expiry_date', 'status', 'created_at'];
+
+    public function index(Request $request): Response
     {
-        // Fetch clients with their relationships for the table
-        $clients = Client::with(['zone', 'sub_zone'])->latest()->get();
+        $sort = in_array($request->string('sort')->toString(), self::SORTABLE, true)
+            ? $request->string('sort')->toString()
+            : 'created_at';
+        $direction = $request->string('direction')->toString() === 'asc' ? 'asc' : 'desc';
+
+        $clients = Client::with(['zone:id,name', 'sub_zone:id,name'])
+            ->search($request->string('search')->toString() ?: null)
+            ->filter($request->only(['zone_id', 'status', 'package_name']))
+            ->orderBy($sort, $direction)
+            ->paginate((int) $request->integer('per_page', 25))
+            ->withQueryString();
 
         return Inertia::render('Clients/Index', [
             'clients' => $clients,
+            'filters' => $request->only(['search', 'zone_id', 'status', 'package_name', 'sort', 'direction']),
+            'zones' => Zone::all(['id', 'name']),
+            'packages' => Package::orderBy('name')->get(['name']),
         ]);
     }
 
@@ -35,46 +49,29 @@ class ClientController extends Controller
             'routers' => Mikrotik::all(['id', 'name']),
             'zones' => Zone::all(['id', 'name']),
             'subZones' => SubZone::all(['id', 'name', 'zone_id']),
-            // Hardcoded for now, or pull from MikroTikService
-            'packages' => ['5Mbps', '10Mbps', '20Mbps', 'Starter_Pack'],
+            'packages' => Package::orderBy('name')->get(['name', 'price', 'mikrotik_id']),
+            'olts' => Olt::where('is_active', true)->get(['id', 'name', 'vendor']),
         ]);
     }
 
-    /**
-     * @throws ClientException
-     * @throws ConfigException
-     * @throws QueryException
-     */
-    public function store(Request $request, MikroTikService $service): RedirectResponse
+    public function store(StoreClientRequest $request, MikroTikService $service): RedirectResponse
     {
-        $request->validate([
-            'pppoe_username' => 'required|unique:clients',
-            'pppoe_password' => 'required|min:6',
-            'mikrotik_id' => 'required',
-            'full_name' => 'required',
-            'monthly_bill' => 'required|numeric',
-        ]);
+        $data = $request->validated();
 
-        // 1. Fetch the Router connection details
-        $router = Mikrotik::findOrFail($request->mikrotik_id);
+        $router = Mikrotik::findOrFail($data['mikrotik_id']);
 
-        // 2. Create the PPPoE Secret on MikroTik
-        $client = $service->connect($router);
-
-        if ($client) {
-            $query = (new Query('/ppp/secret/add'))
-                ->equal('name', $request->pppoe_username)
-                ->equal('password', $request->pppoe_password)
-                ->equal('profile', $request->package_name) // Match MikroTik Profile
-                ->equal('comment', 'Laravel_ID:'.$request->full_name);
-
-            $client->query($query)->read();
-        } else {
-            return back()->withErrors(['mikrotik_id' => 'ROUTER_UNREACHABLE: Provisioning Failed']);
+        try {
+            $service->addPPPoEUser($router, [
+                'name' => $data['pppoe_username'],
+                'password' => $data['pppoe_password'],
+                'profile' => $data['package_name'],
+                'comment' => $data['full_name'],
+            ]);
+        } catch (Throwable) {
+            return back()->withErrors(['mikrotik_id' => 'ROUTER_UNREACHABLE: Provisioning Failed'])->withInput();
         }
 
-        // 3. Save to Database
-        Client::create($request->all());
+        Client::create([...$data, 'status' => 'Active']);
 
         return redirect()->route('dashboard.clients.index')->with('message', 'CLIENT_PROVISIONED_SUCCESSFULLY');
     }
@@ -86,90 +83,90 @@ class ClientController extends Controller
             'routers' => Mikrotik::all(['id', 'name']),
             'zones' => Zone::all(['id', 'name']),
             'subZones' => SubZone::all(['id', 'name', 'zone_id']),
-            'packages' => ['5Mbps', '10Mbps', '20Mbps', 'Starter_Pack'],
+            'packages' => Package::orderBy('name')->get(['name', 'price', 'mikrotik_id']),
         ]);
     }
 
     public function update(Request $request, Client $client, MikroTikService $service): RedirectResponse
     {
         $data = $request->validate([
-            'mikrotik_id' => 'required',
-            'package_name' => 'required',
-            'pppoe_username' => 'required|unique:clients,pppoe_username,'.$client->id,
-            'pppoe_password' => 'required|min:6',
-            'full_name' => 'required',
-            'status' => 'required',
+            'mikrotik_id' => 'required|exists:mikrotiks,id',
+            'zone_id' => 'nullable|exists:zones,id',
+            'sub_zone_id' => 'nullable|exists:sub_zones,id',
+            'package_name' => 'required|string',
+            'pppoe_username' => 'required|string|unique:clients,pppoe_username,'.$client->id,
+            'pppoe_password' => 'required|string|min:6',
+            'full_name' => 'required|string',
+            'email' => 'nullable|email',
+            'phone_number' => 'required|string',
+            'telegram_chat_id' => 'nullable|string',
+            'monthly_bill' => 'required|numeric',
+            'full_address' => 'required|string',
+            'status' => 'required|in:Active,Suspended',
             'expiry_date' => 'required|date',
-            // Add other validation fields as per your migration...
+            'additional_notes' => 'nullable|string',
         ]);
 
-        $router = Mikrotik::findOrFail($request->mikrotik_id);
-        $mt = $service->connect($router);
+        $router = Mikrotik::findOrFail($data['mikrotik_id']);
+        $synced = true;
 
-        if ($mt) {
-            // Find existing secret on MikroTik to update it
-            $find = $mt->query((new Query('/ppp/secret/print'))
-                ->equal('name', $client->pppoe_username))->read();
-
-            if (! empty($find)) {
-                $mt->query((new Query('/ppp/secret/set'))
-                    ->equal('.id', $find[0]['.id'])
-                    ->equal('name', $request->pppoe_username)
-                    ->equal('password', $request->pppoe_password)
-                    ->equal('profile', $request->package_name)
-                    ->equal('disabled', $request->status === 'Active' ? 'no' : 'yes')
-                    ->equal('comment', 'Updated:'.$request->full_name))->read();
-            }
+        try {
+            $service->updatePPPoEUser($router, $client->pppoe_username, [
+                'name' => $data['pppoe_username'],
+                'password' => $data['pppoe_password'],
+                'profile' => $data['package_name'],
+                'comment' => $data['full_name'],
+                'disabled' => $data['status'] === 'Suspended',
+            ]);
+        } catch (Throwable) {
+            $synced = false;
         }
 
-        $client->update($request->all());
+        $client->update($data);
 
-        return redirect()->route('dashboard.clients.index')->with('message', 'CLIENT_DATABASE_SYNCED');
+        return redirect()->route('dashboard.clients.index')->with(
+            $synced ? 'message' : 'error',
+            $synced ? 'CLIENT_DATABASE_SYNCED' : 'DB_UPDATED_BUT_ROUTER_UNREACHABLE'
+        );
     }
 
-    /**
-     * Remove the specified client from storage and MikroTik.
-     */
     public function destroy(Client $client, MikroTikService $service): RedirectResponse
     {
         try {
-            $router = $client->mikrotik;
-
-            $mt = $service->connect($router);
-
-            if ($mt) {
-                $findQuery = (new Query('/ppp/secret/print'))
-                    ->equal('.proplist', '.id')
-                    ->equal('name', $client->pppoe_username);
-
-                $response = $mt->query($findQuery)->read();
-
-                if (! empty($response)) {
-                    $removeQuery = (new Query('/ppp/secret/remove'))
-                        ->equal('.id', $response[0]['.id']);
-                    $mt->query($removeQuery)->read();
-
-                    $kickQuery = (new Query('/ppp/active/print'))
-                        ->equal('.proplist', '.id')
-                        ->equal('name', $client->pppoe_username);
-
-                    $activeRes = $mt->query($kickQuery)->read();
-                    if (! empty($activeRes)) {
-                        $mt->query((new Query('/ppp/active/remove'))->equal('.id', $activeRes[0]['.id']))->read();
-                    }
-                }
-            }
-
-            // 5. Delete from local Database
+            $service->removePPPoEUser($client->mikrotik, $client->pppoe_username);
             $client->delete();
 
             return back()->with('message', 'CLIENT_TERMINATED_AND_ROUTER_CLEANED');
-
-        } catch (\Exception $e) {
-            // If router is offline, we still delete the DB record but warn the admin
+        } catch (Throwable) {
             $client->delete();
 
             return back()->with('error', 'DB_CLEANED_BUT_ROUTER_UNREACHABLE');
         }
+    }
+
+    public function suspend(Client $client, MikroTikService $service): RedirectResponse
+    {
+        try {
+            $service->suspendUser($client->mikrotik, $client->pppoe_username);
+        } catch (Throwable) {
+            return back()->withErrors(['mikrotik_id' => 'ROUTER_UNREACHABLE: Could not suspend on MikroTik.']);
+        }
+
+        $client->update(['status' => 'Suspended']);
+
+        return back()->with('message', 'CLIENT_SUSPENDED');
+    }
+
+    public function unsuspend(Client $client, MikroTikService $service): RedirectResponse
+    {
+        try {
+            $service->unsuspendUser($client->mikrotik, $client->pppoe_username);
+        } catch (Throwable) {
+            return back()->withErrors(['mikrotik_id' => 'ROUTER_UNREACHABLE: Could not unsuspend on MikroTik.']);
+        }
+
+        $client->update(['status' => 'Active']);
+
+        return back()->with('message', 'CLIENT_UNSUSPENDED');
     }
 }

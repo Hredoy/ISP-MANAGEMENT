@@ -53,16 +53,16 @@ const submit = () => {
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Active Package</label>
                         <select v-model="form.package_name" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none text-white">
-                            <option v-for="p in packages" :key="p" :value="p">{{ p }}</option>
+                            <option v-for="p in packages" :key="p.name" :value="p.name">{{ p.name }} — ৳{{ p.price }}</option>
                         </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Current Status</label>
                         <select v-model="form.status" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none" :class="form.status === 'Active' ? 'text-primary' : 'text-red-500'">
                             <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                            <option value="Expired">Expired</option>
+                            <option value="Suspended">Suspended</option>
                         </select>
+                        <p class="text-[8px] opacity-40 italic">EXPIRED is computed automatically from the expiry date and isn't set here.</p>
                     </div>
                 </div>
 

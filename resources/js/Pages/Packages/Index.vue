@@ -1,7 +1,7 @@
 <script setup>
 import ISPLayout from '@/Layouts/ISPLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Trash2, Box, Plus } from 'lucide-vue-next';
+import { Trash2, Box, Pencil, Plus } from 'lucide-vue-next';
 
 defineOptions({ layout: ISPLayout });
 const props = defineProps({ packages: Array });
@@ -21,7 +21,10 @@ const props = defineProps({ packages: Array });
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div v-for="pkg in packages" :key="pkg.id" class="border border-primary/20 bg-black/80 p-6 relative group overflow-hidden">
-                <div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition">
+                <div class="absolute top-0 right-0 p-2 flex gap-2 opacity-20 group-hover:opacity-100 transition">
+                    <Link :href="route('dashboard.packages.edit', pkg.id)" class="hover:text-white">
+                        <Pencil :size="16" />
+                    </Link>
                     <button @click="router.delete(route('dashboard.packages.destroy', pkg.id))" class="text-red-500">
                         <Trash2 :size="16" />
                     </button>

@@ -57,6 +57,48 @@ class PackageController extends Controller
         return redirect()->route('dashboard.packages.index')->with('message', 'PACKAGE_CREATED_ON_ROUTER');
     }
 
+    public function edit(Package $package): Response
+    {
+        return Inertia::render('Packages/Edit', [
+            'package' => $package,
+            'routers' => Mikrotik::all(['id', 'name']),
+        ]);
+    }
+
+    public function update(Request $request, Package $package, MikroTikService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string',
+            'mikrotik_id' => 'required|exists:mikrotiks,id',
+            'rate_limit' => 'required',
+            'price' => 'required|numeric',
+            'local_address' => 'nullable',
+            'remote_address' => 'nullable',
+            'description' => 'nullable',
+        ]);
+
+        $router = Mikrotik::findOrFail($data['mikrotik_id']);
+        $conn = $service->connect($router);
+
+        if ($conn) {
+            $profiles = $conn->query((new Query('/ppp/profile/print'))->equal('.proplist', 'name,.id'))->read();
+            $target = collect($profiles)->where('name', $package->name)->first();
+
+            if ($target && isset($target['.id'])) {
+                $conn->query((new Query('/ppp/profile/set'))
+                    ->equal('.id', $target['.id'])
+                    ->equal('name', $data['name'])
+                    ->equal('rate-limit', $data['rate_limit'])
+                    ->equal('local-address', $data['local_address'] ?? '')
+                    ->equal('remote-address', $data['remote_address'] ?? ''))->read();
+            }
+        }
+
+        $package->update($data);
+
+        return redirect()->route('dashboard.packages.index')->with('message', 'PACKAGE_UPDATED');
+    }
+
     public function destroy(Package $package, MikroTikService $service): RedirectResponse
     {
         $router = $package->mikrotik;

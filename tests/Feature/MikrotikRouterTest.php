@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Mikrotik;
 use App\Models\TenantApplication;
 use App\Models\User;
 use App\Services\MikroTikService;
@@ -74,6 +75,11 @@ class MikrotikRouterTest extends TestCase
             'port' => 8728,
             'description' => 'Main gateway',
         ], 'tenant');
+
+        $stored = Mikrotik::on('tenant')->where('name', 'Core Router')->firstOrFail();
+
+        $this->assertNotSame('secret', $stored->getAttributes()['password']);
+        $this->assertSame('secret', $stored->password);
     }
 
     private function usingTenantDatabase(string $databaseName): void
