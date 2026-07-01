@@ -93,13 +93,13 @@ const sendTest = async (gateway) => {
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[1fr_.9fr]">
-            <section class="space-y-4 border border-primary/20 bg-black p-5">
-                <h2 class="text-sm font-black uppercase text-white">SMS_Gateways</h2>
+            <section class="space-y-4 border border-primary/20 bg-surface p-5">
+                <h2 class="text-sm font-black uppercase text-ink">SMS_Gateways</h2>
 
                 <div v-for="gateway in smsGateways" :key="gateway.id" class="border border-primary/10 p-4 space-y-3">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="font-black text-white uppercase">{{ gateway.display_name }}</p>
+                            <p class="font-black text-ink uppercase">{{ gateway.display_name }}</p>
                             <p class="text-[9px] uppercase text-primary/50">{{ gateway.provider }}</p>
                         </div>
                         <span v-if="gateway.is_active" class="flex items-center gap-1 text-[9px] font-black uppercase text-primary">
@@ -112,7 +112,7 @@ const sendTest = async (gateway) => {
 
                     <div class="flex items-center gap-2">
                         <input v-model="testPhone[gateway.id]" type="text" placeholder="Test phone number"
-                               class="flex-1 border-primary/30 bg-black text-[10px] text-primary focus:border-primary focus:ring-primary" />
+                               class="flex-1 border-primary/30 bg-surface text-[10px] text-primary focus:border-primary focus:ring-primary" />
                         <button @click="sendTest(gateway)" class="border border-primary/30 p-2 hover:bg-primary hover:text-black" title="Send test SMS">
                             <Send :size="14" />
                         </button>
@@ -127,68 +127,68 @@ const sendTest = async (gateway) => {
                 </p>
             </section>
 
-            <section class="space-y-5 border border-primary/20 bg-black p-5">
-                <h2 class="flex items-center gap-2 text-sm font-black uppercase text-white">
+            <section class="space-y-5 border border-primary/20 bg-surface p-5">
+                <h2 class="flex items-center gap-2 text-sm font-black uppercase text-ink">
                     <Plus :size="18" /> Add_SMS_Gateway
                 </h2>
 
                 <form @submit.prevent="submit" class="space-y-4">
                     <label class="block text-[10px] font-bold uppercase text-primary/60">
                         Provider
-                        <select v-model="form.provider" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary">
+                        <select v-model="form.provider" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary">
                             <option v-for="p in providers" :key="p.value" :value="p.value">{{ p.label }}</option>
                         </select>
                     </label>
                     <label class="block text-[10px] font-bold uppercase text-primary/60">
                         Display_Name
-                        <input v-model="form.display_name" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                        <input v-model="form.display_name" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                     </label>
 
                     <template v-if="isSsl">
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             API_Token
-                            <input v-model="form.credentials.api_token" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.api_token" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             SID
-                            <input v-model="form.credentials.sid" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.sid" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                     </template>
 
                     <template v-if="isAlpha">
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             API_Key
-                            <input v-model="form.credentials.api_key" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.api_key" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             Sender_ID
-                            <input v-model="form.credentials.sender_id" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.sender_id" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                     </template>
 
                     <template v-if="isTwilio">
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             Account_SID
-                            <input v-model="form.credentials.account_sid" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.account_sid" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             Auth_Token
-                            <input v-model="form.credentials.auth_token" type="password" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.auth_token" type="password" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             From_Number
-                            <input v-model="form.credentials.from_number" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.from_number" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                     </template>
 
                     <template v-if="isCustom">
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             Endpoint_URL
-                            <input v-model="form.credentials.url" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+                            <input v-model="form.credentials.url" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
                         </label>
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             Method
-                            <select v-model="form.credentials.method" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary">
+                            <select v-model="form.credentials.method" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary">
                                 <option value="post">POST</option>
                                 <option value="get">GET</option>
                             </select>
@@ -196,7 +196,7 @@ const sendTest = async (gateway) => {
                         <label class="block text-[10px] font-bold uppercase text-primary/60">
                             <span>Payload_Template (use </span><span v-pre>{{to}}</span><span> / </span><span v-pre>{{message}}</span><span> placeholders)</span>
                             <textarea v-model="form.credentials.payload_template" rows="3"
-                                      class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary"></textarea>
+                                      class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary"></textarea>
                         </label>
                     </template>
 
@@ -207,11 +207,11 @@ const sendTest = async (gateway) => {
             </section>
         </div>
 
-        <section class="border border-primary/20 bg-black p-5">
-            <h2 class="mb-4 text-sm font-black uppercase text-white">OLT_Devices</h2>
+        <section class="border border-primary/20 bg-surface p-5">
+            <h2 class="mb-4 text-sm font-black uppercase text-ink">OLT_Devices</h2>
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <div v-for="olt in olts" :key="olt.id" class="border border-primary/10 p-3 text-[10px]">
-                    <p class="font-black text-white uppercase">{{ olt.name }}</p>
+                    <p class="font-black text-ink uppercase">{{ olt.name }}</p>
                     <p class="text-primary/60 uppercase">{{ olt.vendor }} — {{ olt.is_active ? 'Active' : 'Inactive' }}</p>
                 </div>
                 <p v-if="olts.length === 0" class="text-[10px] uppercase text-primary/50">

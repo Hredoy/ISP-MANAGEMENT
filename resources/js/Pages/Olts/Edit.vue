@@ -43,7 +43,7 @@ const submit = () => {
             </div>
         </div>
 
-        <div class="border border-primary/30 bg-black/80 p-8 relative overflow-hidden">
+        <div class="border border-primary/30 bg-surface/80 p-8 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-primary/20"></div>
 
             <div class="flex items-center gap-3 mb-8">
@@ -59,12 +59,12 @@ const submit = () => {
                 <div class="md:col-span-2">
                     <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Identifier</label>
                     <input v-model="form.name" type="text"
-                           class="w-full bg-black border border-primary/20 p-3 text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+                           class="w-full bg-surface border border-primary/20 p-3 text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
                 </div>
 
                 <div>
                     <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Vendor</label>
-                    <select v-model="form.vendor" class="w-full bg-black border border-primary/20 p-3 text-primary outline-none">
+                    <select v-model="form.vendor" class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
                         <option value="huawei">Huawei</option>
                         <option value="zte">ZTE</option>
                         <option value="vsol">VSOL (SNMP)</option>
@@ -73,13 +73,13 @@ const submit = () => {
                 <div>
                     <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">IPv4_Address</label>
                     <input v-model="form.host" type="text"
-                           class="w-full bg-black border border-primary/20 p-3 text-primary outline-none">
+                           class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
                 </div>
 
                 <div>
                     <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Port</label>
                     <input v-model="form.port" type="number"
-                           class="w-full bg-black border border-primary/20 p-3 text-primary outline-none">
+                           class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
                 </div>
                 <div class="flex items-end gap-2 pb-3">
                     <input v-model="form.is_active" type="checkbox" id="is_active" class="accent-primary">
@@ -90,19 +90,19 @@ const submit = () => {
                     <div>
                         <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Login_User</label>
                         <input v-model="form.username" type="text"
-                               class="w-full bg-black border border-primary/20 p-3 text-primary outline-none">
+                               class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
                     </div>
                     <div>
                         <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Auth_Key</label>
                         <input v-model="form.password" type="password"
-                               class="w-full bg-black border border-primary/20 p-3 text-primary outline-none">
+                               class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
                     </div>
                 </template>
                 <template v-else>
                     <div class="md:col-span-2">
                         <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">SNMP_Community</label>
                         <input v-model="form.snmp_community" type="text"
-                               class="w-full bg-black border border-primary/20 p-3 text-primary outline-none">
+                               class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
                     </div>
                 </template>
 

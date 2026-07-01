@@ -83,77 +83,77 @@ const submit = () => {
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div v-for="item in stats" :key="item.label" class="border border-primary/20 bg-black p-4">
+      <div v-for="item in stats" :key="item.label" class="border border-primary/20 bg-surface p-4">
         <div class="flex items-center justify-between">
           <p class="text-[9px] uppercase text-primary/50">{{ item.label }}</p>
           <component :is="item.icon" :size="18" class="text-primary/40" />
         </div>
-        <p class="mt-3 text-3xl font-black text-white">{{ item.value }}</p>
+        <p class="mt-3 text-3xl font-black text-ink">{{ item.value }}</p>
       </div>
     </div>
 
     <form class="grid gap-6 xl:grid-cols-[1.1fr_.9fr]" @submit.prevent="submit">
-      <section class="space-y-5 border border-primary/20 bg-black p-5">
-        <h2 class="flex items-center gap-2 text-sm font-black uppercase text-white">
+      <section class="space-y-5 border border-primary/20 bg-surface p-5">
+        <h2 class="flex items-center gap-2 text-sm font-black uppercase text-ink">
           <Settings2 :size="18" /> Brand_Settings
         </h2>
 
         <div class="grid gap-4 md:grid-cols-2">
           <label class="text-[10px] font-bold uppercase text-primary/60">
             Site_Name
-            <input v-model="form.site_name" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+            <input v-model="form.site_name" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
           </label>
           <label class="text-[10px] font-bold uppercase text-primary/60">
             Phone
-            <input v-model="form.phone" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+            <input v-model="form.phone" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
           </label>
           <label class="text-[10px] font-bold uppercase text-primary/60">
             Email
-            <input v-model="form.email" type="email" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+            <input v-model="form.email" type="email" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
           </label>
           <label class="text-[10px] font-bold uppercase text-primary/60">
             Logo_URL
-            <input v-model="form.logo" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+            <input v-model="form.logo" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
           </label>
           <label class="text-[10px] font-bold uppercase text-primary/60">
             Primary_Color
-            <input v-model="form.primary_color" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+            <input v-model="form.primary_color" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
           </label>
           <label class="text-[10px] font-bold uppercase text-primary/60">
             Accent_Color
-            <input v-model="form.accent_color" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+            <input v-model="form.accent_color" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
           </label>
           <label class="text-[10px] font-bold uppercase text-primary/60 md:col-span-2">
             Address
-            <textarea v-model="form.address" rows="2" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary"></textarea>
+            <textarea v-model="form.address" rows="2" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary"></textarea>
           </label>
           <label class="text-[10px] font-bold uppercase text-primary/60 md:col-span-2">
             About
-            <textarea v-model="form.about" rows="4" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary"></textarea>
+            <textarea v-model="form.about" rows="4" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary"></textarea>
           </label>
         </div>
       </section>
 
-      <section class="space-y-5 border border-primary/20 bg-black p-5">
-        <h2 class="flex items-center gap-2 text-sm font-black uppercase text-white">
+      <section class="space-y-5 border border-primary/20 bg-surface p-5">
+        <h2 class="flex items-center gap-2 text-sm font-black uppercase text-ink">
           <Search :size="18" /> SEO_And_Copy
         </h2>
 
         <label class="block text-[10px] font-bold uppercase text-primary/60">
           SEO_Title
-          <input v-model="form.seo_title" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary" />
+          <input v-model="form.seo_title" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary" />
         </label>
         <label class="block text-[10px] font-bold uppercase text-primary/60">
           SEO_Description
-          <textarea v-model="form.seo_description" rows="3" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary"></textarea>
+          <textarea v-model="form.seo_description" rows="3" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary"></textarea>
         </label>
         <label class="block text-[10px] font-bold uppercase text-primary/60">
           SEO_Keywords
-          <textarea v-model="form.seo_keywords" rows="2" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary"></textarea>
+          <textarea v-model="form.seo_keywords" rows="2" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary"></textarea>
         </label>
         <label class="block text-[10px] font-bold uppercase text-primary/60">
           Referral_Offer
-          <textarea v-model="form.referral_offer" rows="3" class="mt-2 w-full border-primary/30 bg-black text-primary focus:border-primary focus:ring-primary"></textarea>
+          <textarea v-model="form.referral_offer" rows="3" class="mt-2 w-full border-primary/30 bg-surface text-primary focus:border-primary focus:ring-primary"></textarea>
         </label>
         <button type="submit" class="inline-flex items-center gap-2 bg-primary px-5 py-3 text-[10px] font-black uppercase text-black hover:bg-white" :disabled="form.processing">
           <Save :size="16" /> Save_Settings
@@ -162,13 +162,13 @@ const submit = () => {
     </form>
 
     <div class="grid gap-6 xl:grid-cols-2">
-      <section class="border border-primary/20 bg-black p-5">
-        <h2 class="mb-4 flex items-center gap-2 text-sm font-black uppercase text-white">
+      <section class="border border-primary/20 bg-surface p-5">
+        <h2 class="mb-4 flex items-center gap-2 text-sm font-black uppercase text-ink">
           <UserPlus :size="18" /> Latest_Connections
         </h2>
         <div class="space-y-3">
           <div v-for="item in connections" :key="item.id" class="border border-primary/10 p-3 text-[10px]">
-            <div class="flex justify-between gap-3 text-white">
+            <div class="flex justify-between gap-3 text-ink">
               <span class="font-black uppercase">{{ item.name }}</span>
               <span>{{ item.phone }}</span>
             </div>
@@ -178,27 +178,27 @@ const submit = () => {
         </div>
       </section>
 
-      <section class="border border-primary/20 bg-black p-5">
-        <h2 class="mb-4 flex items-center gap-2 text-sm font-black uppercase text-white">
+      <section class="border border-primary/20 bg-surface p-5">
+        <h2 class="mb-4 flex items-center gap-2 text-sm font-black uppercase text-ink">
           <BellDot :size="18" /> Latest_Public_Forms
         </h2>
         <div class="space-y-3">
           <div v-for="item in complaints" :key="`c-${item.id}`" class="border border-primary/10 p-3 text-[10px]">
-            <div class="flex justify-between gap-3 text-white">
+            <div class="flex justify-between gap-3 text-ink">
               <span class="font-black uppercase">{{ item.complaint_type }}</span>
               <span>{{ item.phone }}</span>
             </div>
             <p class="mt-2 text-primary/60">{{ item.message }}</p>
           </div>
           <div v-for="item in payments" :key="`p-${item.id}`" class="border border-primary/10 p-3 text-[10px]">
-            <div class="flex justify-between gap-3 text-white">
+            <div class="flex justify-between gap-3 text-ink">
               <span class="font-black uppercase">{{ item.payment_method }}</span>
               <span>{{ item.amount }}</span>
             </div>
             <p class="mt-2 text-primary/60">TXID: {{ item.transaction_id }} / Customer: {{ item.customer_id }}</p>
           </div>
           <div v-for="item in referrals" :key="`r-${item.id}`" class="border border-primary/10 p-3 text-[10px]">
-            <div class="flex justify-between gap-3 text-white">
+            <div class="flex justify-between gap-3 text-ink">
               <span class="font-black uppercase">{{ item.friend_name }}</span>
               <span>{{ item.friend_phone }}</span>
             </div>

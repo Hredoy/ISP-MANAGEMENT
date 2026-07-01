@@ -19,7 +19,7 @@ const submit = () => {
             <h2 class="text-primary font-black tracking-widest uppercase flex items-center gap-2">
                 <MapPin :size="18"/> Assigned_Zones
             </h2>
-            <div class="border border-primary/20 bg-black overflow-hidden">
+            <div class="border border-primary/20 bg-surface overflow-hidden">
                 <table class="w-full text-[11px] text-left">
                     <thead class="bg-primary/10 text-primary border-b border-primary/20">
                     <tr>
@@ -45,22 +45,22 @@ const submit = () => {
             </div>
         </div>
 
-        <div class="border border-primary/30 bg-black/50 p-6 h-fit sticky top-6">
+        <div class="border border-primary/30 bg-surface/50 p-6 h-fit sticky top-6">
             <h3 class="text-primary font-bold text-xs mb-6 uppercase border-b border-primary/20 pb-2">Initialize_New_Zone</h3>
             <form @submit.prevent="submit" class="space-y-4">
                 <div>
                     <label class="block text-[9px] text-primary/60 mb-1 uppercase">Sub_Zone_Identifier</label>
-                    <input v-model="form.name" type="text" class="w-full bg-black border border-primary/30 p-2 text-primary outline-none focus:border-primary">
+                    <input v-model="form.name" type="text" class="w-full bg-surface border border-primary/30 p-2 text-primary outline-none focus:border-primary">
                 </div>
                 <label class="block text-[9px] text-primary/60 mb-1 uppercase">Parent_Zone</label>
-                <select v-model="form.zone_id" class="w-full bg-black border border-primary/30 p-2 text-primary outline-none">
+                <select v-model="form.zone_id" class="w-full bg-surface border border-primary/30 p-2 text-primary outline-none">
                     <option v-for="zone in zones" :key="zone.id" :value="zone.id">
                         {{ zone.name }}
                     </option>
                 </select>
                 <div>
                     <label class="block text-[9px] text-primary/60 mb-1 uppercase">Manager_Contact</label>
-                    <input v-model="form.manager_contact" type="text" placeholder="e.g. 01XXXXXXXXXX" class="w-full bg-black border border-primary/30 p-2 text-primary outline-none">
+                    <input v-model="form.manager_contact" type="text" placeholder="e.g. 01XXXXXXXXXX" class="w-full bg-surface border border-primary/30 p-2 text-primary outline-none">
                 </div>
                 <button class="w-full bg-primary text-black font-black py-2 text-[10px] uppercase hover:bg-white transition">
                     Create_Zone_Record

@@ -97,7 +97,7 @@ const columns = [
     columnHelper.accessor('full_name', {
         header: 'Client_Info',
         cell: (info) => h('div', [
-            h('div', { class: 'font-bold text-white uppercase' }, info.getValue()),
+            h('div', { class: 'font-bold text-ink uppercase' }, info.getValue()),
             h('div', { class: 'opacity-50 text-[9px]' }, info.row.original.phone_number),
         ]),
     }),
@@ -119,7 +119,7 @@ const columns = [
     columnHelper.accessor('monthly_bill', {
         header: 'Billing_Status',
         cell: (info) => h('div', [
-            h('div', { class: 'font-bold text-white' }, `৳ ${info.getValue()}`),
+            h('div', { class: 'font-bold text-ink' }, `৳ ${info.getValue()}`),
             h('span', {
                 class: `inline-block mt-1 px-1.5 py-0.5 border text-[9px] uppercase font-black ${statusStyles[info.row.original.effective_status] ?? ''}`,
             }, `[ ${info.row.original.effective_status} ]`),
@@ -137,7 +137,7 @@ const columns = [
         cell: (info) => {
             const client = info.row.original;
             const actions = [
-                h(Link, { href: route('dashboard.clients.edit', client.id), class: 'hover:text-white' }, () => h(Edit3, { size: 16 })),
+                h(Link, { href: route('dashboard.clients.edit', client.id), class: 'hover:text-ink' }, () => h(Edit3, { size: 16 })),
             ];
             if (client.effective_status === 'Suspended') {
                 actions.push(h('button', { onClick: () => unsuspendClient(client), class: 'hover:text-primary', title: 'Reactivate' }, [h(PlayCircle, { size: 16 })]));
@@ -188,32 +188,32 @@ const sortableColumns = { full_name: 'Client_Info', pppoe_username: 'Credentials
             <div class="relative flex-1">
                 <Search class="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" :size="14" />
                 <input v-model="search" type="text" placeholder="SEARCH_BY_NAME_PPPOE_OR_PHONE..."
-                       class="w-full bg-black border border-primary/30 py-2 pl-10 pr-4 text-[10px] outline-none focus:border-primary transition">
+                       class="w-full bg-surface border border-primary/30 py-2 pl-10 pr-4 text-[10px] outline-none focus:border-primary transition">
             </div>
-            <select v-model="zoneId" class="bg-black border border-primary/30 py-2 px-3 text-[10px] outline-none focus:border-primary">
+            <select v-model="zoneId" class="bg-surface border border-primary/30 py-2 px-3 text-[10px] outline-none focus:border-primary">
                 <option value="">ALL_ZONES</option>
                 <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.name }}</option>
             </select>
-            <select v-model="status" class="bg-black border border-primary/30 py-2 px-3 text-[10px] outline-none focus:border-primary">
+            <select v-model="status" class="bg-surface border border-primary/30 py-2 px-3 text-[10px] outline-none focus:border-primary">
                 <option value="">ALL_STATUSES</option>
                 <option value="Active">Active</option>
                 <option value="Suspended">Suspended</option>
                 <option value="Expired">Expired</option>
             </select>
-            <select v-model="packageName" class="bg-black border border-primary/30 py-2 px-3 text-[10px] outline-none focus:border-primary">
+            <select v-model="packageName" class="bg-surface border border-primary/30 py-2 px-3 text-[10px] outline-none focus:border-primary">
                 <option value="">ALL_PACKAGES</option>
                 <option v-for="p in packages" :key="p.name" :value="p.name">{{ p.name }}</option>
             </select>
         </div>
 
-        <div class="border border-primary/20 bg-black/80 shadow-2xl">
+        <div class="border border-primary/20 bg-surface/80 shadow-2xl">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-[11px] border-collapse">
                     <thead class="bg-primary/10 border-b border-primary/20 uppercase font-black text-[9px] tracking-widest">
                     <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
                         <th v-for="header in headerGroup.headers" :key="header.id"
                             class="p-4"
-                            :class="[header.column.id === 'actions' ? 'text-right' : '', sortableColumns[header.column.id] ? 'cursor-pointer select-none hover:text-white' : '']"
+                            :class="[header.column.id === 'actions' ? 'text-right' : '', sortableColumns[header.column.id] ? 'cursor-pointer select-none hover:text-ink' : '']"
                             @click="sortableColumns[header.column.id] && toggleSort(header.column.id)">
                             <FlexRender :render="header.column.columnDef.header" :props="header.getContext()" />
                             <span v-if="sort === header.column.id"> {{ direction === 'asc' ? '▲' : '▼' }}</span>

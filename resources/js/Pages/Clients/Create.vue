@@ -171,41 +171,41 @@ const submit = async () => {
         </div>
 
         <form @submit.prevent="submit" class="space-y-8">
-            <div class="border border-primary/20 bg-black/60 p-6 space-y-6">
+            <div class="border border-primary/20 bg-surface/60 p-6 space-y-6">
                 <h3 class="text-[10px] font-black uppercase tracking-[0.3em] border-b border-primary/10 pb-2 mb-4">01. Connection_Logic</h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Select Router *</label>
-                        <select v-model="form.mikrotik_id" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                        <select v-model="form.mikrotik_id" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                             <option value="">-- Select Router --</option>
                             <option v-for="r in routers" :key="r.id" :value="r.id">{{ r.name }}</option>
                         </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Select Package *</label>
-                        <select v-model="form.package_name" @change="onPackageChange" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                        <select v-model="form.package_name" @change="onPackageChange" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                             <option value="">-- Select Package --</option>
                             <option v-for="p in availablePackages" :key="p.name" :value="p.name">{{ p.name }} — ৳{{ p.price }}</option>
                         </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Select OLT (Optional)</label>
-                        <select v-model="form.olt_id" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                        <select v-model="form.olt_id" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                             <option value="">-- No OLT (Generic) --</option>
                             <option v-for="o in olts" :key="o.id" :value="o.id">{{ o.name }} ({{ o.vendor }})</option>
                         </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Select Zone</label>
-                        <select v-model="form.zone_id" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                        <select v-model="form.zone_id" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                             <option value="">-- Select Zone --</option>
                             <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.name }}</option>
                         </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Select Sub Zone</label>
-                        <select v-model="form.sub_zone_id" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                        <select v-model="form.sub_zone_id" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                             <option value="">-- Select Sub Zone --</option>
                             <option v-for="sz in subZones" :key="sz.id" :value="sz.id">{{ sz.name }}</option>
                         </select>
@@ -215,28 +215,28 @@ const submit = async () => {
                 <div v-if="form.olt_id" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-primary/10">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">ONU Serial</label>
-                        <input v-model="form.onu_serial" type="text" placeholder="e.g. HWTC12345678" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.onu_serial" type="text" placeholder="e.g. HWTC12345678" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">ONU MAC (if no serial)</label>
-                        <input v-model="form.onu_mac" type="text" placeholder="AA:BB:CC:DD:EE:FF" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.onu_mac" type="text" placeholder="AA:BB:CC:DD:EE:FF" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">PON Port</label>
-                        <input v-model="form.pon_port" type="text" placeholder="e.g. 0/1" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.pon_port" type="text" placeholder="e.g. 0/1" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">PPPoE Username *</label>
-                        <input v-model="form.pppoe_username" type="text" placeholder="e.g., user123" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                        <input v-model="form.pppoe_username" type="text" placeholder="e.g., user123" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                         <p class="text-[8px] opacity-40 italic">This will be used for PPPoE login</p>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">PPPoE Password *</label>
                         <div class="flex gap-2">
-                            <input v-model="form.pppoe_password" type="text" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                            <input v-model="form.pppoe_password" type="text" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                             <button type="button" @click="generatePassword" class="bg-primary/10 border border-primary/30 px-3 text-[10px] hover:bg-primary hover:text-black transition flex items-center gap-1">
                                 <RefreshCw :size="12" /> GENERATE
                             </button>
@@ -245,48 +245,48 @@ const submit = async () => {
                 </div>
             </div>
 
-            <div class="border border-primary/20 bg-black/60 p-6 space-y-6">
+            <div class="border border-primary/20 bg-surface/60 p-6 space-y-6">
                 <h3 class="text-[10px] font-black uppercase tracking-[0.3em] border-b border-primary/10 pb-2">02. Personal_Data</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Full Name *</label>
-                        <input v-model="form.full_name" type="text" placeholder="Enter client full name" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.full_name" type="text" placeholder="Enter client full name" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Email Address</label>
-                        <input v-model="form.email" type="email" placeholder="client@example.com" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.email" type="email" placeholder="client@example.com" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Phone Number *</label>
-                        <input v-model="form.phone_number" type="text" placeholder="01XXXXXXXXX" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.phone_number" type="text" placeholder="01XXXXXXXXX" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Telegram Chat ID</label>
-                        <input v-model="form.telegram_chat_id" type="text" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.telegram_chat_id" type="text" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                     <div class="col-span-2 space-y-1">
                         <label class="text-[9px] uppercase font-bold">Full Address *</label>
-                        <textarea v-model="form.full_address" rows="2" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none"></textarea>
+                        <textarea v-model="form.full_address" rows="2" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none"></textarea>
                     </div>
                 </div>
             </div>
 
-            <div class="border border-primary/20 bg-black/60 p-6 space-y-6">
+            <div class="border border-primary/20 bg-surface/60 p-6 space-y-6">
                 <h3 class="text-[10px] font-black uppercase tracking-[0.3em] border-b border-primary/10 pb-2">03. Financial_Schedule</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Monthly Bill (৳) *</label>
-                        <input v-model="form.monthly_bill" type="number" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none text-white font-bold">
+                        <input v-model="form.monthly_bill" type="number" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none text-ink font-bold">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Expires</label>
-                        <input :value="form.expiry_date" type="text" disabled class="w-full bg-black/60 border border-primary/20 p-2 text-xs outline-none opacity-60 cursor-not-allowed">
+                        <input :value="form.expiry_date" type="text" disabled class="w-full bg-surface/60 border border-primary/20 p-2 text-xs outline-none opacity-60 cursor-not-allowed">
                         <p class="text-[8px] opacity-40 italic">Auto-set to today + 30 days</p>
                     </div>
                 </div>
                 <div class="space-y-1">
                     <label class="text-[9px] uppercase font-bold">Additional Notes</label>
-                    <textarea v-model="form.additional_notes" rows="2" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none"></textarea>
+                    <textarea v-model="form.additional_notes" rows="2" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none"></textarea>
                 </div>
             </div>
 
@@ -294,7 +294,7 @@ const submit = async () => {
                 <p v-for="(msg, field) in errors" :key="field">{{ field }}: {{ Array.isArray(msg) ? msg[0] : msg }}</p>
             </div>
 
-            <div class="border border-primary/20 bg-black/60 p-6 space-y-3">
+            <div class="border border-primary/20 bg-surface/60 p-6 space-y-3">
                 <h3 class="text-[10px] font-black uppercase tracking-[0.3em] border-b border-primary/10 pb-2 mb-2">Provisioning_Steps</h3>
                 <div v-for="step in steps" :key="step.key" class="flex items-center justify-between gap-4 py-1 text-xs">
                     <div class="flex items-center gap-2">

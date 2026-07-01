@@ -110,10 +110,10 @@ onUnmounted(() => clearInterval(interval));
                 <Activity class="animate-pulse" /> Live_Node_Monitor
             </h1>
 
-            <div class="bg-black border border-primary/40 p-1 px-3 flex items-center gap-2">
+            <div class="bg-surface border border-primary/40 p-1 px-3 flex items-center gap-2">
                 <Router :size="14" class="text-primary" />
                 <select v-model="selectedRouterId" class="bg-transparent text-primary text-[10px] font-bold uppercase border-none focus:ring-0 outline-none">
-                    <option v-for="r in routers" :key="r.id" :value="r.id" class="bg-black text-primary">
+                    <option v-for="r in routers" :key="r.id" :value="r.id" class="bg-surface text-primary">
                         {{ r.name }}
                     </option>
                 </select>
@@ -121,28 +121,28 @@ onUnmounted(() => clearInterval(interval));
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div class="border border-primary/20 bg-black p-4">
+            <div class="border border-primary/20 bg-surface p-4">
                 <p class="text-[9px] text-primary/50 uppercase">Active_Users</p>
                 <div class="flex items-center justify-between">
                     <span class="text-2xl font-black">{{ stats.users }}</span>
                     <Users :size="18" class="text-primary/30" />
                 </div>
             </div>
-            <div class="border border-primary/20 bg-black p-4">
+            <div class="border border-primary/20 bg-surface p-4">
                 <p class="text-[9px] text-primary/50 uppercase">RAM_Usage</p>
                 <div class="flex items-center justify-between">
                     <span class="text-2xl font-black">{{ stats.ram }}<small class="text-xs">MB</small></span>
                     <Cpu :size="18" class="text-primary/30" />
                 </div>
             </div>
-            <div class="border border-primary/20 bg-black p-4">
+            <div class="border border-primary/20 bg-surface p-4">
                 <p class="text-[9px] text-primary/50 uppercase">Storage</p>
                 <div class="flex items-center justify-between">
                     <span class="text-2xl font-black">{{ stats.storage }}<small class="text-xs">MB</small></span>
                     <HardDrive :size="18" class="text-primary/30" />
                 </div>
             </div>
-            <div class="border border-primary/20 bg-black p-4 col-span-1 lg:col-span-2">
+            <div class="border border-primary/20 bg-surface p-4 col-span-1 lg:col-span-2">
                 <p class="text-[9px] text-primary/50 uppercase">Uptime</p>
                 <div class="flex items-center justify-between">
                     <span class="text-xl font-black truncate">{{ stats.uptime }}</span>
@@ -152,7 +152,7 @@ onUnmounted(() => clearInterval(interval));
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="border border-primary/20 bg-black p-4">
+            <div class="border border-primary/20 bg-surface p-4">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-[10px] font-bold text-primary underline uppercase tracking-widest">>> Traffic_BPS</h3>
                     <div class="flex gap-4 text-[11px] font-bold">
@@ -163,7 +163,7 @@ onUnmounted(() => clearInterval(interval));
                 <VueApexCharts type="area" height="250" :options="trafficOptions" :series="trafficSeries" />
             </div>
 
-            <div class="border border-primary/20 bg-black p-4">
+            <div class="border border-primary/20 bg-surface p-4">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-[10px] font-bold text-primary underline uppercase tracking-widest">>> CPU_Load_%</h3>
                     <span class="text-primary font-bold text-xs">{{ stats.cpu }}%</span>

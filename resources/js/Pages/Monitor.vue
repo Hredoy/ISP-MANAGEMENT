@@ -56,25 +56,25 @@ onUnmounted(() => clearInterval(interval));
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="border border-primary/30 p-4 bg-black">
+            <div class="border border-primary/30 p-4 bg-surface">
                 <p class="text-[10px] opacity-60">ACTIVE_USERS</p>
                 <p class="text-3xl font-black">{{ userCount }}</p>
             </div>
-            <div class="border border-primary/30 p-4 bg-black">
+            <div class="border border-primary/30 p-4 bg-surface">
                 <p class="text-[10px] opacity-60">RAM_USAGE</p>
                 <p class="text-3xl font-black">{{ systemInfo.ram }}<span class="text-xs">MB</span></p>
             </div>
-            <div class="border border-primary/30 p-4 bg-black">
+            <div class="border border-primary/30 p-4 bg-surface">
                 <p class="text-[10px] opacity-60">STORAGE_USED</p>
                 <p class="text-3xl font-black">{{ systemInfo.storage }}<span class="text-xs">MB</span></p>
             </div>
-            <div class="border border-primary/30 p-4 bg-black">
+            <div class="border border-primary/30 p-4 bg-surface">
                 <p class="text-[10px] opacity-60">UPTIME</p>
                 <p class="text-xl font-black mt-2">{{ systemInfo.uptime }}</p>
             </div>
         </div>
 
-        <div class="border border-primary/30 bg-black p-6">
+        <div class="border border-primary/30 bg-surface p-6">
             <div class="flex justify-between mb-4">
                 <h3 class="text-xs font-bold uppercase tracking-widest text-primary">CPU_LOAD_HISTORY (%)</h3>
                 <span class="text-[10px] text-primary font-mono">{{ cpuSeries[0].data.at(-1) }}%</span>

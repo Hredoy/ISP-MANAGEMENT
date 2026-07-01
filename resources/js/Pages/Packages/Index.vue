@@ -20,22 +20,22 @@ const props = defineProps({ packages: Array });
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div v-for="pkg in packages" :key="pkg.id" class="border border-primary/20 bg-black/80 p-6 relative group overflow-hidden">
+            <div v-for="pkg in packages" :key="pkg.id" class="border border-primary/20 bg-surface/80 p-6 relative group overflow-hidden">
                 <div class="absolute top-0 right-0 p-2 flex gap-2 opacity-20 group-hover:opacity-100 transition">
-                    <Link :href="route('dashboard.packages.edit', pkg.id)" class="hover:text-white">
+                    <Link :href="route('dashboard.packages.edit', pkg.id)" class="hover:text-ink">
                         <Pencil :size="16" />
                     </Link>
                     <button @click="router.delete(route('dashboard.packages.destroy', pkg.id))" class="text-red-500">
                         <Trash2 :size="16" />
                     </button>
                 </div>
-                <h3 class="text-white font-bold text-lg mb-1 uppercase">{{ pkg.name }}</h3>
+                <h3 class="text-ink font-bold text-lg mb-1 uppercase">{{ pkg.name }}</h3>
                 <p class="text-[10px] text-primary/50 mb-4 tracking-widest border-b border-primary/10 pb-2">ROUTER: {{ pkg.mikrotik.name }}</p>
 
                 <div class="space-y-2 text-[11px]">
                     <div class="flex justify-between">
                         <span class="opacity-60 uppercase">Speed:</span>
-                        <span class="font-bold text-white">{{ pkg.rate_limit }}</span>
+                        <span class="font-bold text-ink">{{ pkg.rate_limit }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="opacity-60 uppercase">Price:</span>

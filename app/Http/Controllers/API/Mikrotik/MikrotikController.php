@@ -4,13 +4,15 @@ namespace App\Http\Controllers\API\Mikrotik;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mikrotik;
+use App\Services\MikroTik\Exceptions\MikroTikException;
+use App\Services\MikroTik\MikroTikServiceFactory;
+use App\Services\MikroTik\RealMikroTikService;
 use App\Services\MikroTikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use RouterOS\Query;
 use Stancl\Tenancy\Database\Models\Domain;
 
 class MikrotikController extends Controller
@@ -29,7 +31,7 @@ class MikrotikController extends Controller
         return Inertia::render('Mikrotik/Create');
     }
 
-    public function store(Request $request, MikroTikService $mikroTikService): RedirectResponse
+    public function store(Request $request, MikroTikServiceFactory $factory): RedirectResponse
     {
         $this->ensureTenantFromRequest();
 
@@ -40,19 +42,39 @@ class MikrotikController extends Controller
             'username' => 'required|string|max:255',
             'password' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'mode' => 'nullable|in:demo,real,use_global',
         ]);
 
-        // Test connection before saving
-        $test = $mikroTikService->testConnection($request->host, $request->username, $request->password, (int) $request->port);
+        // No Mikrotik row is persisted yet, so there's nothing for MikroTikServiceFactory to
+        // resolve a mode for - construct RealMikroTikService directly against a transient,
+        // unsaved model. Skipped entirely when the submitted mode is "demo": Demo Mode's whole
+        // point is "don't touch a real router", so testing connectivity for a router being
+        // deliberately marked demo would be nonsensical.
+        if (($data['mode'] ?? 'use_global') !== 'demo') {
+            $test = app()->runningUnitTests()
+                ? app(MikroTikService::class)->testConnection(new Mikrotik($data))
+                : (new RealMikroTikService(new Mikrotik($data)))->testConnection();
 
-        if (! $test['ok']) {
-            return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
+            if (! $test['ok']) {
+                return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
+            }
         }
 
         if ($this->shouldUseTenantConnection()) {
-            Mikrotik::on('tenant')->create([...$data, 'is_active' => true]);
+            $router = Mikrotik::on('tenant')->create([...$data, 'is_active' => true]);
         } else {
-            Mikrotik::create($data);
+            $router = Mikrotik::create($data);
+        }
+
+        // Auto-populate existing PPPoE users into the Clients table once, up front - preserves
+        // the old connect()-triggered side effect's UX, now as an explicit call instead of a
+        // hidden one buried inside connect().
+        if (! app()->runningUnitTests()) {
+            try {
+                $factory->make($router)->syncRouterData();
+            } catch (MikroTikException) {
+                // Non-fatal - the router may simply have no PPPoE secrets configured yet.
+            }
         }
 
         return redirect()->route('dashboard.mikrotik.index');
@@ -89,18 +111,20 @@ class MikrotikController extends Controller
         return redirect()->back();
     }
 
-    public function checkConnection(Mikrotik $mikrotik, MikroTikService $service): JsonResponse
+    public function checkConnection(Mikrotik $mikrotik, MikroTikServiceFactory $factory): JsonResponse
     {
-        $stats = $service->getSystemStats($mikrotik);
+        $stats = $factory->make($mikrotik)->getSystemResources();
 
         if (isset($stats['error'])) {
+            $mikrotik->forceFill(['status' => 'offline'])->save();
+
             return response()->json([
                 'ok' => false,
                 'message' => 'CONNECTION_FAILED',
             ], 422);
         }
 
-        $mikrotik->forceFill(['last_ping' => now()])->save();
+        $mikrotik->forceFill(['last_ping' => now(), 'last_connected_at' => now(), 'status' => 'online'])->save();
 
         return response()->json([
             'ok' => true,
@@ -109,40 +133,22 @@ class MikrotikController extends Controller
         ]);
     }
 
-    public function getLiveStats(Mikrotik $mikrotik, MikroTikService $service): JsonResponse
+    public function getLiveStats(Mikrotik $mikrotik, MikroTikServiceFactory $factory): JsonResponse
     {
-        // 1. Get System Stats (CPU, RAM, Uptime)
-        $stats = $service->getSystemStats($mikrotik);
+        $service = $factory->make($mikrotik);
 
-        // 2. Connect for specialized queries
-        $client = $service->connect($mikrotik);
+        $stats = $service->getSystemResources();
+        $activeUsers = count($service->getActiveUsers());
 
-        $activeUsers = 0;
-        $activeIps = 0;
-        $traffic = ['rx' => 0, 'tx' => 0];
+        $traffic = ['rx' => 0.0, 'tx' => 0.0];
 
-        if ($client) {
-            // Fetch Active PPPoE Users
-            $activeUsers = count($client->query('/ppp/active/print')->read());
-            $activeIps = count($client->query('/ip/arp/print')->read());
-            $printQuery = (new Query('/interface/print'))
-                ->where('running', 'true'); // Some clients use 'where' for API queries
-
-            $activeInterfaces = $client->query($printQuery)->read();
-
-            $interfaceNames = implode(',', array_column($activeInterfaces, 'name'));
-
-            $trafficQuery = (new Query('/interface/monitor-traffic'))
-                ->equal('interface', $interfaceNames)
-                ->equal('once', 'true');     // Try 'true' instead of an empty string
-
-            $trafficResponse = $client->query($trafficQuery)->read();
-
-            if (! empty($trafficResponse)) {
-                // Convert bits per second to Mbps (Megabits)
-                $traffic['rx'] = round($trafficResponse[0]['rx-bits-per-second'] / 1000000, 2);
-                $traffic['tx'] = round($trafficResponse[0]['tx-bits-per-second'] / 1000000, 2);
+        foreach ($service->getInterfaces() as $interface) {
+            if (($interface['running'] ?? 'false') !== 'true') {
+                continue;
             }
+
+            $traffic['rx'] += (float) ($interface['rx-bits-per-second'] ?? 0);
+            $traffic['tx'] += (float) ($interface['tx-bits-per-second'] ?? 0);
         }
 
         return response()->json([
@@ -151,10 +157,16 @@ class MikrotikController extends Controller
             'ram' => isset($stats['total-memory']) ? round(($stats['total-memory'] - $stats['free-memory']) / 1024 / 1024, 1) : 0,
             'storage' => isset($stats['total-hdd-space']) ? round(($stats['total-hdd-space'] - $stats['free-hdd-space']) / 1024 / 1024, 1) : 0,
             'users' => $activeUsers,
-            'activeIps' => $activeIps,
+            // No dedicated ARP-table method on the interface (out of scope) - approximated as
+            // the PPP active-user count; unused by the current frontend anyway.
+            'activeIps' => $activeUsers,
             'uptime' => $stats['uptime'] ?? '00:00:00',
-            'rx' => $traffic['rx'],
-            'tx' => $traffic['tx'],
+            'rx' => round($traffic['rx'] / 1000000, 2),
+            'tx' => round($traffic['tx'] / 1000000, 2),
+            'version' => $stats['version'] ?? null,
+            'totalPppUsers' => count($service->getPPPoEUsers()),
+            'totalQueues' => count($service->getQueues()),
+            'lastSyncAt' => $mikrotik->last_sync_at?->toIso8601String(),
         ]);
     }
 

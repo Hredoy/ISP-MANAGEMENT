@@ -5,12 +5,13 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Mikrotik;
 use App\Models\Package;
-use App\Services\MikroTikService;
+use App\Services\MikroTik\Exceptions\MikroTikCommandException;
+use App\Services\MikroTik\Exceptions\MikroTikException;
+use App\Services\MikroTik\MikroTikServiceFactory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use RouterOS\Query;
 
 class PackageController extends Controller
 {
@@ -28,7 +29,7 @@ class PackageController extends Controller
         ]);
     }
 
-    public function store(Request $request, MikroTikService $service): RedirectResponse
+    public function store(Request $request, MikroTikServiceFactory $factory): RedirectResponse
     {
         $data = $request->validate([
             'name' => 'required|string',
@@ -41,15 +42,17 @@ class PackageController extends Controller
         ]);
 
         $router = Mikrotik::findOrFail($data['mikrotik_id']);
-        $conn = $service->connect($router);
 
-        if ($conn) {
-            $query = (new Query('/ppp/profile/add'))
-                ->equal('name', $data['name'])
-                ->equal('rate-limit', $data['rate_limit'])
-                ->equal('local-address', $data['local_address'] ?? '')
-                ->equal('remote-address', $data['remote_address'] ?? '');
-            $conn->query($query)->read();
+        try {
+            $factory->make($router)->createPPPProfile([
+                'name' => $data['name'],
+                'rate_limit' => $data['rate_limit'],
+                'local_address' => $data['local_address'] ?? null,
+                'remote_address' => $data['remote_address'] ?? null,
+            ]);
+        } catch (MikroTikException) {
+            // Matches prior behaviour: the profile is created locally even if the router is
+            // unreachable, rather than blocking package management on router availability.
         }
 
         Package::create($data);
@@ -65,7 +68,7 @@ class PackageController extends Controller
         ]);
     }
 
-    public function update(Request $request, Package $package, MikroTikService $service): RedirectResponse
+    public function update(Request $request, Package $package, MikroTikServiceFactory $factory): RedirectResponse
     {
         $data = $request->validate([
             'name' => 'required|string',
@@ -78,20 +81,16 @@ class PackageController extends Controller
         ]);
 
         $router = Mikrotik::findOrFail($data['mikrotik_id']);
-        $conn = $service->connect($router);
 
-        if ($conn) {
-            $profiles = $conn->query((new Query('/ppp/profile/print'))->equal('.proplist', 'name,.id'))->read();
-            $target = collect($profiles)->where('name', $package->name)->first();
-
-            if ($target && isset($target['.id'])) {
-                $conn->query((new Query('/ppp/profile/set'))
-                    ->equal('.id', $target['.id'])
-                    ->equal('name', $data['name'])
-                    ->equal('rate-limit', $data['rate_limit'])
-                    ->equal('local-address', $data['local_address'] ?? '')
-                    ->equal('remote-address', $data['remote_address'] ?? ''))->read();
-            }
+        try {
+            $factory->make($router)->updatePPPProfile($package->name, [
+                'name' => $data['name'],
+                'rate_limit' => $data['rate_limit'],
+                'local_address' => $data['local_address'] ?? null,
+                'remote_address' => $data['remote_address'] ?? null,
+            ]);
+        } catch (MikroTikException) {
+            // Soft-fail, same as store() above.
         }
 
         $package->update($data);
@@ -99,39 +98,23 @@ class PackageController extends Controller
         return redirect()->route('dashboard.packages.index')->with('message', 'PACKAGE_UPDATED');
     }
 
-    public function destroy(Package $package, MikroTikService $service): RedirectResponse
+    public function destroy(Package $package, MikroTikServiceFactory $factory): RedirectResponse
     {
         $router = $package->mikrotik;
-        $conn = $service->connect($router);
 
-        if ($conn) {
-            // Find and remove profile from MikroTik
-            $allProfiles = $conn->query((new \RouterOS\Query('/ppp/profile/print'))
-                ->equal('.proplist', 'name,.id')
-            )->read();
+        try {
+            $deleted = $factory->make($router)->deletePPPProfile($package->name);
 
-            $targetProfile = collect($allProfiles)->where('name', $package->name)->first();
-            if ($targetProfile && isset($targetProfile['.id'])) {
-                // 3. Prevent deletion of default system profiles (Safety Guard)
-                $systemIds = ['*0', '*FFFFFFFE']; // Standard MikroTik default IDs
-
-                if (in_array($targetProfile['.id'], $systemIds)) {
-                    return back()->with('error', 'PROTECTED_RESOURCE: Cannot delete system default profiles.');
-                }
-
-                // 4. Remove using the found .id
-                $conn->query(
-                    (new \RouterOS\Query('/ppp/profile/remove'))
-                        ->equal('numbers', $targetProfile['.id'])
-                )->read();
-            }
-
-            if (! $targetProfile) {
-                // The profile is already gone from the router, so just delete from DB
+            if (! $deleted) {
+                // The profile is already gone from the router, so just delete from DB.
                 $package->delete();
 
                 return back()->with('message', 'DB_SYNCED: Profile was already missing from Router.');
             }
+        } catch (MikroTikCommandException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (MikroTikException) {
+            // Router unreachable — soft-fail, matches store()/update()'s philosophy above.
         }
 
         $package->delete();

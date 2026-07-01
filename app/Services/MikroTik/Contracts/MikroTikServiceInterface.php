@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Services\MikroTik\Contracts;
+
+/**
+ * Router-scoped abstraction over RouterOS operations. One instance is bound to exactly one
+ * `App\Models\Mikrotik` router (constructed via `App\Services\MikroTik\MikroTikServiceFactory`).
+ *
+ * Implementations must return data in RouterOS's own raw wire shape (hyphenated keys such as
+ * `cpu-load`, `rx-bits-per-second`; stringy `"true"`/`"false"` booleans) since existing callers
+ * read these keys directly. `MockMikroTikService` must replicate this shape exactly, not "clean
+ * it up" - the whole point of Demo Mode is that callers can't tell the difference.
+ */
+interface MikroTikServiceInterface
+{
+    /**
+     * @return array{ok: bool, message: string, stats: array<string, mixed>|null}
+     */
+    public function testConnection(): array;
+
+    /**
+     * Router identity + version info, merged with getSystemResources()'s numeric stats.
+     *
+     * @return array<string, mixed>
+     */
+    public function getRouterInfo(): array;
+
+    /**
+     * Raw /system/resource/print shape: cpu-load, total-memory, free-memory,
+     * total-hdd-space, free-hdd-space, uptime, version, board-name, ...
+     *
+     * @return array<string, mixed>
+     */
+    public function getSystemResources(): array;
+
+    /**
+     * All interfaces with live traffic counters merged in (rx-bits-per-second/tx-bits-per-second).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getInterfaces(): array;
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getPPPProfiles(): array;
+
+    /**
+     * @param  array{name: string, rate_limit?: string, local_address?: string, remote_address?: string}  $data
+     * @return array<string, mixed>
+     */
+    public function createPPPProfile(array $data): array;
+
+    /**
+     * @param  array{name?: string, rate_limit?: string, local_address?: string, remote_address?: string}  $data
+     */
+    public function updatePPPProfile(string $name, array $data): bool;
+
+    /**
+     * @throws \App\Services\MikroTik\Exceptions\MikroTikCommandException if the profile is a protected system default
+     */
+    public function deletePPPProfile(string $name): bool;
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getPPPoEUsers(): array;
+
+    /**
+     * @param  array{name?: string, pppoe_username?: string, password?: string, pppoe_password?: string, profile?: string, service?: string, local-address?: string, remote-address?: string, comment?: string}  $data
+     * @return array<string, mixed>
+     */
+    public function addPPPoEUser(array $data): array;
+
+    /**
+     * @param  array{name?: string, pppoe_username?: string, password?: string, pppoe_password?: string, profile?: string, comment?: string, disabled?: bool}  $data
+     */
+    public function updatePPPoEUser(string $currentUsername, array $data): bool;
+
+    public function removePPPoEUser(string $username): bool;
+
+    /** Sets the PPP secret's disabled flag to "no". */
+    public function enableUser(string $username): bool;
+
+    /** Sets the PPP secret's disabled flag to "yes" and kills any active session. */
+    public function disableUser(string $username): bool;
+
+    /** Kills an active session without touching the secret's disabled flag. */
+    public function disconnectActiveSession(string $username): bool;
+
+    /**
+     * Raw /ppp/active/print rows.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getActiveUsers(): array;
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getQueues(): array;
+
+    /**
+     * Idempotent upsert-by-name - safe to retry. Callers depend on this for retryable
+     * provisioning steps.
+     *
+     * @return array<string, mixed>
+     */
+    public function addSimpleQueue(string $name, string $target, string $maxLimit): array;
+
+    /**
+     * @param  array{target?: string, max_limit?: string, disabled?: bool}  $data
+     */
+    public function updateQueue(string $name, array $data): bool;
+
+    public function deleteQueue(string $name): bool;
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getHotspotUsers(): array;
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getDhcpLeases(): array;
+
+    public function reboot(): bool;
+
+    /**
+     * Pulls current PPP secrets from the router and upserts them into the `clients` table,
+     * mirroring the app's existing PPPoE-sync behaviour. Explicit action (e.g. an admin-panel
+     * "Sync" button) - no longer a hidden side effect of connecting.
+     *
+     * @return array{synced: int}
+     */
+    public function syncRouterData(): array;
+}

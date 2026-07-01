@@ -10,15 +10,23 @@ export default {
         './resources/js/**/*.vue',
     ],
 
+    darkMode: 'class',
+
     theme: {
         extend: {
             colors: {
-                primary: '#00FF41',      // Classic Matrix Green
-                secondary: '#003B00',    // Deep Forest Green
-                terminal: '#0D0208',     // True Black-Green background
+                primary: '#38BDF8',      // Sky-400 — calm, professional accent
+                secondary: '#64748B',    // Slate-500 — neutral secondary accent
+                // Reversible tokens: value flips between :root (light) and .dark (dark)
+                // via CSS custom properties in resources/css/app.css, so existing
+                // markup (bg-terminal, bg-surface, text-ink) adapts automatically.
+                terminal: 'rgb(var(--color-canvas) / <alpha-value>)',
+                surface: 'rgb(var(--color-surface) / <alpha-value>)',
+                ink: 'rgb(var(--color-ink) / <alpha-value>)',
             },
             fontFamily: {
-                sans: ['Fira Code', 'ui-monospace', 'monospace', ...defaultTheme.fontFamily.sans],
+                sans: ['Figtree', 'ui-sans-serif', 'system-ui', ...defaultTheme.fontFamily.sans],
+                mono: ['Figtree', 'ui-sans-serif', 'system-ui', ...defaultTheme.fontFamily.sans],
             },
         },
     },

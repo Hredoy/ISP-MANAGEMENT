@@ -29,43 +29,43 @@ const form = useForm({
             </Link>
         </div>
 
-        <form @submit.prevent="form.put(route('dashboard.packages.update', package.id))" class="space-y-6 bg-black/40 border border-primary/10 p-8 shadow-2xl">
+        <form @submit.prevent="form.put(route('dashboard.packages.update', package.id))" class="space-y-6 bg-surface/40 border border-primary/10 p-8 shadow-2xl">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="col-span-2 space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Package Name *</label>
-                    <input v-model="form.name" type="text" class="w-full bg-black border border-primary/30 p-3 text-sm focus:border-primary outline-none transition">
+                    <input v-model="form.name" type="text" class="w-full bg-surface border border-primary/30 p-3 text-sm focus:border-primary outline-none transition">
                 </div>
 
                 <div class="col-span-2 space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Select Router *</label>
-                    <select v-model="form.mikrotik_id" class="w-full bg-black border border-primary/30 p-3 text-sm focus:border-primary outline-none">
+                    <select v-model="form.mikrotik_id" class="w-full bg-surface border border-primary/30 p-3 text-sm focus:border-primary outline-none">
                         <option v-for="r in routers" :key="r.id" :value="r.id">{{ r.name }}</option>
                     </select>
                 </div>
 
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Rate Limit *</label>
-                    <input v-model="form.rate_limit" type="text" class="w-full bg-black border border-primary/30 p-3 text-sm outline-none">
+                    <input v-model="form.rate_limit" type="text" class="w-full bg-surface border border-primary/30 p-3 text-sm outline-none">
                 </div>
 
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Price (BDT)</label>
-                    <input v-model="form.price" type="number" step="0.01" class="w-full bg-black border border-primary/30 p-3 text-sm outline-none text-white font-bold">
+                    <input v-model="form.price" type="number" step="0.01" class="w-full bg-surface border border-primary/30 p-3 text-sm outline-none text-ink font-bold">
                 </div>
 
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Local Address</label>
-                    <input v-model="form.local_address" type="text" class="w-full bg-black border border-primary/30 p-3 text-sm outline-none">
+                    <input v-model="form.local_address" type="text" class="w-full bg-surface border border-primary/30 p-3 text-sm outline-none">
                 </div>
 
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Remote Address</label>
-                    <input v-model="form.remote_address" type="text" class="w-full bg-black border border-primary/30 p-3 text-sm outline-none">
+                    <input v-model="form.remote_address" type="text" class="w-full bg-surface border border-primary/30 p-3 text-sm outline-none">
                 </div>
 
                 <div class="col-span-2 space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Description</label>
-                    <textarea v-model="form.description" rows="3" class="w-full bg-black border border-primary/30 p-3 text-sm outline-none"></textarea>
+                    <textarea v-model="form.description" rows="3" class="w-full bg-surface border border-primary/30 p-3 text-sm outline-none"></textarea>
                 </div>
             </div>
 

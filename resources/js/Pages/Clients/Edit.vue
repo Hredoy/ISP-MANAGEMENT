@@ -34,7 +34,7 @@ const submit = () => {
                 <ChevronLeft :size="14" /> ABORT_EDIT
             </Link>
             <div class="text-right">
-                <h2 class="text-xl font-black uppercase italic tracking-tighter text-white">Modify_Subscriber_Node</h2>
+                <h2 class="text-xl font-black uppercase italic tracking-tighter text-ink">Modify_Subscriber_Node</h2>
                 <p class="text-[9px] text-yellow-500 flex items-center justify-end gap-1">
                     <AlertTriangle :size="10" /> CHANGES_WILL_SYNC_TO_MIKROTIK
                 </p>
@@ -42,23 +42,23 @@ const submit = () => {
         </div>
 
         <form @submit.prevent="submit" class="space-y-8 pb-20">
-            <div class="border border-primary/20 bg-black/60 p-6 space-y-6">
+            <div class="border border-primary/20 bg-surface/60 p-6 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Assign Router</label>
-                        <select v-model="form.mikrotik_id" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                        <select v-model="form.mikrotik_id" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                             <option v-for="r in routers" :key="r.id" :value="r.id">{{ r.name }}</option>
                         </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Active Package</label>
-                        <select v-model="form.package_name" class="w-full bg-black border border-primary/30 p-2 text-xs focus:border-primary outline-none text-white">
+                        <select v-model="form.package_name" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none text-ink">
                             <option v-for="p in packages" :key="p.name" :value="p.name">{{ p.name }} — ৳{{ p.price }}</option>
                         </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Current Status</label>
-                        <select v-model="form.status" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none" :class="form.status === 'Active' ? 'text-primary' : 'text-red-500'">
+                        <select v-model="form.status" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none" :class="form.status === 'Active' ? 'text-primary' : 'text-red-500'">
                             <option value="Active">Active</option>
                             <option value="Suspended">Suspended</option>
                         </select>
@@ -69,13 +69,13 @@ const submit = () => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-primary/10">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">PPPoE Username</label>
-                        <input v-model="form.pppoe_username" type="text" class="w-full bg-black border border-primary/30 p-2 text-xs text-white/50 cursor-not-allowed" readonly>
+                        <input v-model="form.pppoe_username" type="text" class="w-full bg-surface border border-primary/30 p-2 text-xs text-ink/50 cursor-not-allowed" readonly>
                         <p class="text-[7px] text-yellow-500 uppercase mt-1 italic">!! Username changes require MikroTik manual check</p>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold opacity-70">Update Password</label>
                         <div class="flex gap-2">
-                            <input v-model="form.pppoe_password" type="text" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                            <input v-model="form.pppoe_password" type="text" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                             <button type="button" @click="generatePassword" class="bg-primary/10 border border-primary/30 px-3 text-[10px] hover:bg-primary hover:text-black transition">
                                 <RefreshCw :size="12" />
                             </button>
@@ -84,15 +84,15 @@ const submit = () => {
                 </div>
             </div>
 
-            <div class="border border-primary/20 bg-black/60 p-6 space-y-6">
+            <div class="border border-primary/20 bg-surface/60 p-6 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Full Name</label>
-                        <input v-model="form.full_name" type="text" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.full_name" type="text" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[9px] uppercase font-bold">Expiry Date</label>
-                        <input v-model="form.expiry_date" type="date" class="w-full bg-black border border-primary/30 p-2 text-xs outline-none">
+                        <input v-model="form.expiry_date" type="date" class="w-full bg-surface border border-primary/30 p-2 text-xs outline-none">
                     </div>
                 </div>
             </div>

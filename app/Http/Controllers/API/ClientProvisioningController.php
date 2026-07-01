@@ -8,7 +8,7 @@ use App\Models\Client;
 use App\Models\Mikrotik;
 use App\Models\Olt;
 use App\Models\Package;
-use App\Services\MikroTikService;
+use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\OltService;
 use App\Services\SmsService;
 use Illuminate\Http\JsonResponse;
@@ -33,17 +33,18 @@ class ClientProvisioningController extends Controller
         return response()->json(['success' => true, 'message' => 'CLIENT_RECORD_CREATED', 'client_id' => $client->id]);
     }
 
-    public function pppoe(Client $client, MikroTikService $service): JsonResponse
+    public function pppoe(Client $client, MikroTikServiceFactory $factory): JsonResponse
     {
         $router = Mikrotik::findOrFail($client->mikrotik_id);
 
         try {
-            $existing = $service->getPPPoEUsers($router);
+            $service = $factory->make($router);
+            $existing = $service->getPPPoEUsers();
 
             $alreadyExists = collect($existing)->contains('name', $client->pppoe_username);
 
             if (! $alreadyExists) {
-                $service->addPPPoEUser($router, [
+                $service->addPPPoEUser([
                     'name' => $client->pppoe_username,
                     'password' => $client->pppoe_password,
                     'profile' => $client->package_name,
@@ -93,7 +94,7 @@ class ClientProvisioningController extends Controller
         return response()->json(['success' => true, 'message' => 'ONU_BOUND']);
     }
 
-    public function queue(Client $client, MikroTikService $service): JsonResponse
+    public function queue(Client $client, MikroTikServiceFactory $factory): JsonResponse
     {
         $package = Package::where('name', $client->package_name)
             ->where('mikrotik_id', $client->mikrotik_id)
@@ -111,7 +112,7 @@ class ClientProvisioningController extends Controller
 
         try {
             $router = Mikrotik::findOrFail($client->mikrotik_id);
-            $service->addSimpleQueue($router, $client->pppoe_username, $package->remote_address, $package->rate_limit);
+            $factory->make($router)->addSimpleQueue($client->pppoe_username, $package->remote_address, $package->rate_limit);
 
             return response()->json(['success' => true, 'message' => 'BANDWIDTH_QUEUE_APPLIED']);
         } catch (Throwable $e) {

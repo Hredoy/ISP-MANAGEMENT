@@ -14,6 +14,10 @@ class Mikrotik extends Model
     protected $casts = [
         'last_ping' => 'datetime',
         'last_pppoe_sync_at' => 'datetime',
+        'last_connected_at' => 'datetime',
+        'last_sync_at' => 'datetime',
+        'is_default' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     protected function username(): Attribute

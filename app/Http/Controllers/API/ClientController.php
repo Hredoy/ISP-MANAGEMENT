@@ -10,7 +10,7 @@ use App\Models\Olt;
 use App\Models\Package;
 use App\Models\SubZone;
 use App\Models\Zone;
-use App\Services\MikroTikService;
+use App\Services\MikroTik\MikroTikServiceFactory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -54,14 +54,14 @@ class ClientController extends Controller
         ]);
     }
 
-    public function store(StoreClientRequest $request, MikroTikService $service): RedirectResponse
+    public function store(StoreClientRequest $request, MikroTikServiceFactory $factory): RedirectResponse
     {
         $data = $request->validated();
 
         $router = Mikrotik::findOrFail($data['mikrotik_id']);
 
         try {
-            $service->addPPPoEUser($router, [
+            $factory->make($router)->addPPPoEUser([
                 'name' => $data['pppoe_username'],
                 'password' => $data['pppoe_password'],
                 'profile' => $data['package_name'],
@@ -87,7 +87,7 @@ class ClientController extends Controller
         ]);
     }
 
-    public function update(Request $request, Client $client, MikroTikService $service): RedirectResponse
+    public function update(Request $request, Client $client, MikroTikServiceFactory $factory): RedirectResponse
     {
         $data = $request->validate([
             'mikrotik_id' => 'required|exists:mikrotiks,id',
@@ -111,7 +111,7 @@ class ClientController extends Controller
         $synced = true;
 
         try {
-            $service->updatePPPoEUser($router, $client->pppoe_username, [
+            $factory->make($router)->updatePPPoEUser($client->pppoe_username, [
                 'name' => $data['pppoe_username'],
                 'password' => $data['pppoe_password'],
                 'profile' => $data['package_name'],
@@ -130,10 +130,10 @@ class ClientController extends Controller
         );
     }
 
-    public function destroy(Client $client, MikroTikService $service): RedirectResponse
+    public function destroy(Client $client, MikroTikServiceFactory $factory): RedirectResponse
     {
         try {
-            $service->removePPPoEUser($client->mikrotik, $client->pppoe_username);
+            $factory->make($client->mikrotik)->removePPPoEUser($client->pppoe_username);
             $client->delete();
 
             return back()->with('message', 'CLIENT_TERMINATED_AND_ROUTER_CLEANED');
@@ -144,10 +144,10 @@ class ClientController extends Controller
         }
     }
 
-    public function suspend(Client $client, MikroTikService $service): RedirectResponse
+    public function suspend(Client $client, MikroTikServiceFactory $factory): RedirectResponse
     {
         try {
-            $service->suspendUser($client->mikrotik, $client->pppoe_username);
+            $factory->make($client->mikrotik)->disableUser($client->pppoe_username);
         } catch (Throwable) {
             return back()->withErrors(['mikrotik_id' => 'ROUTER_UNREACHABLE: Could not suspend on MikroTik.']);
         }
@@ -157,10 +157,10 @@ class ClientController extends Controller
         return back()->with('message', 'CLIENT_SUSPENDED');
     }
 
-    public function unsuspend(Client $client, MikroTikService $service): RedirectResponse
+    public function unsuspend(Client $client, MikroTikServiceFactory $factory): RedirectResponse
     {
         try {
-            $service->unsuspendUser($client->mikrotik, $client->pppoe_username);
+            $factory->make($client->mikrotik)->enableUser($client->pppoe_username);
         } catch (Throwable) {
             return back()->withErrors(['mikrotik_id' => 'ROUTER_UNREACHABLE: Could not unsuspend on MikroTik.']);
         }

@@ -38,7 +38,7 @@ const checkConnection = async (olt) => {
             </Link>
         </div>
 
-        <div class="overflow-x-auto border border-primary/20 bg-black/40">
+        <div class="overflow-x-auto border border-primary/20 bg-surface/40">
             <table class="w-full text-left text-[11px]">
                 <thead class="bg-primary/10 text-primary uppercase border-b border-primary/20">
                 <tr>
@@ -61,7 +61,7 @@ const checkConnection = async (olt) => {
                     </td>
                     <td class="p-4">
                         <div class="flex justify-end gap-3">
-                            <Link :href="`/dashboard/olts/${node.id}/edit`" class="text-primary hover:text-white" title="Edit">
+                            <Link :href="`/dashboard/olts/${node.id}/edit`" class="text-primary hover:text-ink" title="Edit">
                                 <Pencil :size="15" />
                             </Link>
                             <button @click="deleteOlt(node.id)" class="text-red-500 hover:text-red-300 font-bold" title="Delete">
