@@ -2,10 +2,11 @@
 
 namespace App\Providers;
 
+use App\Listeners\LogMikrotikActivity;
 use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\MikroTik\ModeResolver;
-use App\Services\MikroTikService;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -17,10 +18,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(MikroTikService::class, function ($app) {
-            return new MikroTikService;
-        });
-
         $this->app->singleton(ModeResolver::class);
         $this->app->singleton(MikroTikServiceFactory::class);
     }
@@ -31,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->validateEnvironment();
+
+        Event::subscribe(LogMikrotikActivity::class);
 
         Vite::prefetch(concurrency: 3);
     }

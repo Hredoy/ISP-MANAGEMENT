@@ -8,13 +8,15 @@ use App\Models\Olt;
 use App\Models\Package;
 use App\Models\TenantApplication;
 use App\Models\User;
-use App\Services\MikroTikService;
+use App\Services\MikroTik\Contracts\MikroTikServiceInterface;
+use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\OltService;
 use App\Services\TenantProvisioningService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 class ClientProvisioningWizardTest extends TestCase
@@ -59,10 +61,9 @@ class ClientProvisioningWizardTest extends TestCase
         [$host, $user, $router] = $this->setupTenant('wizard-pppoe');
         $client = $this->makeClient($router);
 
-        $this->mock(MikroTikService::class, function ($mock) {
-            $mock->shouldReceive('getPPPoEUsers')->twice()->andReturn([]);
-            $mock->shouldReceive('addPPPoEUser')->twice()->andReturn([]);
-        });
+        $service = $this->fakeMikroTikService();
+        $service->shouldReceive('getPPPoEUsers')->twice()->andReturn([]);
+        $service->shouldReceive('addPPPoEUser')->twice()->andReturn([]);
 
         // Call twice, simulating a manual retry after a UI-level hiccup.
         $this->actingAs($user)->postJson("http://{$host}/dashboard/clients/provision/{$client->id}/pppoe")
@@ -76,7 +77,7 @@ class ClientProvisioningWizardTest extends TestCase
         [$host, $user, $router] = $this->setupTenant('wizard-pppoe-fail');
         $client = $this->makeClient($router);
 
-        $this->mock(MikroTikService::class)
+        $this->fakeMikroTikService()
             ->shouldReceive('getPPPoEUsers')
             ->once()
             ->andThrow(new \RuntimeException('MikroTik router is unreachable.'));
@@ -145,7 +146,7 @@ class ClientProvisioningWizardTest extends TestCase
             'remote_address' => '10.10.10.5',
         ]);
 
-        $this->mock(MikroTikService::class)
+        $this->fakeMikroTikService()
             ->shouldReceive('addSimpleQueue')
             ->once()
             ->andReturn([]);
@@ -222,6 +223,24 @@ class ClientProvisioningWizardTest extends TestCase
         ]));
         DB::purge('tenant');
         DB::reconnect('tenant');
+    }
+
+    /**
+     * MikroTikServiceFactory::make() constructs Real/MockMikroTikService directly (never
+     * container-resolved), so faking the router connection means swapping the factory binding
+     * itself rather than mocking a service class - keeps controllers genuinely mode-agnostic
+     * instead of special-casing test runtime in production code.
+     */
+    private function fakeMikroTikService(): MockInterface
+    {
+        $service = \Mockery::mock(MikroTikServiceInterface::class);
+
+        $factory = \Mockery::mock(MikroTikServiceFactory::class);
+        $factory->shouldReceive('make')->andReturn($service);
+
+        $this->app->instance(MikroTikServiceFactory::class, $factory);
+
+        return $service;
     }
 
     private function dropTestTenantDatabases(): void

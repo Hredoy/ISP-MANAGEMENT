@@ -17,6 +17,8 @@ const form = useForm({
     username: props.router.username,
     password: props.router.password,
     description: props.router.description ?? '',
+    location: props.router.location ?? '',
+    mode: props.router.mode ?? 'use_global',
 });
 
 const submit = () => {
@@ -85,6 +87,21 @@ const submit = () => {
                     <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Description</label>
                     <textarea v-model="form.description" rows="3"
                               class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none resize-y"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Location</label>
+                    <input v-model="form.location" type="text"
+                           class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Mode</label>
+                    <select v-model="form.mode"
+                            class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
+                        <option value="use_global">USE_GLOBAL</option>
+                        <option value="demo">DEMO</option>
+                        <option value="real">REAL</option>
+                    </select>
                 </div>
 
                 <div class="md:col-span-2 pt-4">

@@ -4,13 +4,15 @@ namespace App\Http\Controllers\API\Mikrotik;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mikrotik;
+use App\Services\MikroTik\DTO\RouterDashboardStats;
 use App\Services\MikroTik\Exceptions\MikroTikException;
 use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\MikroTik\RealMikroTikService;
-use App\Services\MikroTikService;
+use App\Services\MikroTik\Resources\MikrotikResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Stancl\Tenancy\Database\Models\Domain;
@@ -22,7 +24,9 @@ class MikrotikController extends Controller
         $this->ensureTenantFromRequest();
 
         return Inertia::render('Mikrotik/Index', [
-            'routers' => $this->query()->get(),
+            // ->resolve() instead of ::collection() - a ResourceCollection's default "data" wrapper
+            // is meant for top-level JSON responses, not values nested inside an Inertia props array.
+            'routers' => $this->query()->get()->map(fn (Mikrotik $mikrotik) => (new MikrotikResource($mikrotik))->resolve()),
         ]);
     }
 
@@ -42,6 +46,7 @@ class MikrotikController extends Controller
             'username' => 'required|string|max:255',
             'password' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
             'mode' => 'nullable|in:demo,real,use_global',
         ]);
 
@@ -51,9 +56,7 @@ class MikrotikController extends Controller
         // point is "don't touch a real router", so testing connectivity for a router being
         // deliberately marked demo would be nonsensical.
         if (($data['mode'] ?? 'use_global') !== 'demo') {
-            $test = app()->runningUnitTests()
-                ? app(MikroTikService::class)->testConnection(new Mikrotik($data))
-                : (new RealMikroTikService(new Mikrotik($data)))->testConnection();
+            $test = (new RealMikroTikService(new Mikrotik($data)))->testConnection();
 
             if (! $test['ok']) {
                 return back()->withErrors(['host' => 'CRITICAL_FAILURE: Could not reach node. Check credentials.']);
@@ -69,12 +72,10 @@ class MikrotikController extends Controller
         // Auto-populate existing PPPoE users into the Clients table once, up front - preserves
         // the old connect()-triggered side effect's UX, now as an explicit call instead of a
         // hidden one buried inside connect().
-        if (! app()->runningUnitTests()) {
-            try {
-                $factory->make($router)->syncRouterData();
-            } catch (MikroTikException) {
-                // Non-fatal - the router may simply have no PPPoE secrets configured yet.
-            }
+        try {
+            $factory->make($router)->syncRouterData();
+        } catch (MikroTikException) {
+            // Non-fatal - the router may simply have no PPPoE secrets configured yet.
         }
 
         return redirect()->route('dashboard.mikrotik.index');
@@ -96,6 +97,8 @@ class MikrotikController extends Controller
             'username' => 'required',
             'password' => 'required',
             'description' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
+            'mode' => 'nullable|in:demo,real,use_global',
         ]);
 
         $mikrotik->update($data);
@@ -109,6 +112,61 @@ class MikrotikController extends Controller
         $mikrotik->delete();
 
         return redirect()->back();
+    }
+
+    /**
+     * Quick per-router mode override, decoupled from update()'s full credential form - lets the
+     * admin panel's router list flip Demo/Real/Use_Global without resubmitting username/password.
+     */
+    public function updateMode(Request $request, Mikrotik $mikrotik): RedirectResponse
+    {
+        $data = $request->validate([
+            'mode' => 'required|in:demo,real,use_global',
+        ]);
+
+        $mikrotik->update($data);
+
+        return back()->with('message', 'MODE_UPDATED');
+    }
+
+    /**
+     * Explicit admin action - pulls current PPP secrets from the router into the `clients`
+     * table. Previously this only ever happened as a side effect of store(); the interface
+     * docblock on syncRouterData() already documents this as the intended trigger.
+     */
+    public function sync(Mikrotik $mikrotik, MikroTikServiceFactory $factory): RedirectResponse
+    {
+        try {
+            $result = $factory->make($mikrotik)->syncRouterData();
+        } catch (MikroTikException) {
+            return back()->withErrors(['host' => 'ROUTER_UNREACHABLE: Could not sync.']);
+        }
+
+        return back()->with('message', "SYNCED_{$result['synced']}_CLIENTS");
+    }
+
+    public function enable(Mikrotik $mikrotik): RedirectResponse
+    {
+        $mikrotik->forceFill(['is_active' => true])->save();
+
+        return back()->with('message', 'NODE_ENABLED');
+    }
+
+    public function disable(Mikrotik $mikrotik): RedirectResponse
+    {
+        $mikrotik->forceFill(['is_active' => false])->save();
+
+        return back()->with('message', 'NODE_DISABLED');
+    }
+
+    public function setDefault(Mikrotik $mikrotik): RedirectResponse
+    {
+        DB::connection($mikrotik->getConnectionName())->transaction(function () use ($mikrotik) {
+            $this->query()->where('id', '!=', $mikrotik->id)->update(['is_default' => false]);
+            $mikrotik->forceFill(['is_default' => true])->save();
+        });
+
+        return back()->with('message', 'DEFAULT_NODE_SET');
     }
 
     public function checkConnection(Mikrotik $mikrotik, MikroTikServiceFactory $factory): JsonResponse
@@ -137,37 +195,16 @@ class MikrotikController extends Controller
     {
         $service = $factory->make($mikrotik);
 
-        $stats = $service->getSystemResources();
-        $activeUsers = count($service->getActiveUsers());
+        $stats = RouterDashboardStats::fromServiceData(
+            systemResources: $service->getSystemResources(),
+            interfaces: $service->getInterfaces(),
+            activeUsers: count($service->getActiveUsers()),
+            totalPppUsers: count($service->getPPPoEUsers()),
+            totalQueues: count($service->getQueues()),
+            lastSyncAt: $mikrotik->last_sync_at?->toIso8601String(),
+        );
 
-        $traffic = ['rx' => 0.0, 'tx' => 0.0];
-
-        foreach ($service->getInterfaces() as $interface) {
-            if (($interface['running'] ?? 'false') !== 'true') {
-                continue;
-            }
-
-            $traffic['rx'] += (float) ($interface['rx-bits-per-second'] ?? 0);
-            $traffic['tx'] += (float) ($interface['tx-bits-per-second'] ?? 0);
-        }
-
-        return response()->json([
-            'cpu' => $stats['cpu-load'] ?? 0,
-            // RAM & Storage calculation (Total - Free)
-            'ram' => isset($stats['total-memory']) ? round(($stats['total-memory'] - $stats['free-memory']) / 1024 / 1024, 1) : 0,
-            'storage' => isset($stats['total-hdd-space']) ? round(($stats['total-hdd-space'] - $stats['free-hdd-space']) / 1024 / 1024, 1) : 0,
-            'users' => $activeUsers,
-            // No dedicated ARP-table method on the interface (out of scope) - approximated as
-            // the PPP active-user count; unused by the current frontend anyway.
-            'activeIps' => $activeUsers,
-            'uptime' => $stats['uptime'] ?? '00:00:00',
-            'rx' => round($traffic['rx'] / 1000000, 2),
-            'tx' => round($traffic['tx'] / 1000000, 2),
-            'version' => $stats['version'] ?? null,
-            'totalPppUsers' => count($service->getPPPoEUsers()),
-            'totalQueues' => count($service->getQueues()),
-            'lastSyncAt' => $mikrotik->last_sync_at?->toIso8601String(),
-        ]);
+        return response()->json($stats->toArray());
     }
 
     private function query()

@@ -8,12 +8,14 @@ use App\Models\Package;
 use App\Models\TenantApplication;
 use App\Models\User;
 use App\Models\Zone;
-use App\Services\MikroTikService;
+use App\Services\MikroTik\Contracts\MikroTikServiceInterface;
+use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\TenantProvisioningService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 class ClientManagementTest extends TestCase
@@ -91,7 +93,7 @@ class ClientManagementTest extends TestCase
     {
         [$host, $user, $router] = $this->setupTenant('client-create');
 
-        $this->mock(MikroTikService::class)
+        $this->fakeMikroTikService()
             ->shouldReceive('addPPPoEUser')
             ->once()
             ->andReturn([]);
@@ -118,7 +120,7 @@ class ClientManagementTest extends TestCase
     {
         [$host, $user, $router] = $this->setupTenant('client-offline');
 
-        $this->mock(MikroTikService::class)
+        $this->fakeMikroTikService()
             ->shouldReceive('addPPPoEUser')
             ->once()
             ->andThrow(new \RuntimeException('MikroTik router is unreachable.'));
@@ -154,7 +156,7 @@ class ClientManagementTest extends TestCase
             'status' => 'Active',
         ]);
 
-        $this->mock(MikroTikService::class)
+        $this->fakeMikroTikService()
             ->shouldReceive('removePPPoEUser')
             ->once()
             ->andReturn(true);
@@ -179,8 +181,8 @@ class ClientManagementTest extends TestCase
             'status' => 'Active',
         ]);
 
-        $this->mock(MikroTikService::class)
-            ->shouldReceive('suspendUser')
+        $this->fakeMikroTikService()
+            ->shouldReceive('disableUser')
             ->once()
             ->andReturn(true);
 
@@ -204,8 +206,8 @@ class ClientManagementTest extends TestCase
             'status' => 'Suspended',
         ]);
 
-        $this->mock(MikroTikService::class)
-            ->shouldReceive('unsuspendUser')
+        $this->fakeMikroTikService()
+            ->shouldReceive('enableUser')
             ->once()
             ->andReturn(true);
 
@@ -274,6 +276,24 @@ class ClientManagementTest extends TestCase
         ]);
 
         return ["{$slug}.localhost", $user, $router];
+    }
+
+    /**
+     * MikroTikServiceFactory::make() constructs Real/MockMikroTikService directly (never
+     * container-resolved), so faking the router connection means swapping the factory binding
+     * itself rather than mocking a service class - keeps controllers genuinely mode-agnostic
+     * instead of special-casing test runtime in production code.
+     */
+    private function fakeMikroTikService(): MockInterface
+    {
+        $service = \Mockery::mock(MikroTikServiceInterface::class);
+
+        $factory = \Mockery::mock(MikroTikServiceFactory::class);
+        $factory->shouldReceive('make')->andReturn($service);
+
+        $this->app->instance(MikroTikServiceFactory::class, $factory);
+
+        return $service;
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Events\PppUserUpdated;
 use App\Events\UserDisconnected;
 use App\Models\Client as ISPClient;
 use App\Models\Mikrotik;
+use App\Models\MikrotikActivityLog;
 use App\Models\MockMikrotikInterface;
 use App\Models\MockMikrotikProfile;
 use App\Models\MockMikrotikQueue;
@@ -207,6 +208,7 @@ class MockMikroTikService implements MikroTikServiceInterface
         }
 
         $user->update(['disabled' => false]);
+        $this->logActivity('ppp_user.enabled', "PPPoE user '{$username}' enabled.", ['username' => $username]);
 
         return true;
     }
@@ -221,6 +223,7 @@ class MockMikroTikService implements MikroTikServiceInterface
 
         $user->update(['disabled' => true]);
         $this->disconnectActiveSession($username);
+        $this->logActivity('ppp_user.disabled', "PPPoE user '{$username}' disabled.", ['username' => $username]);
 
         return true;
     }
@@ -262,6 +265,8 @@ class MockMikroTikService implements MikroTikServiceInterface
             ['target' => $target, 'max_limit' => $maxLimit],
         );
 
+        $this->logActivity('queue.upserted', "Bandwidth queue '{$name}' set to {$maxLimit} for {$target}.", ['name' => $name, 'target' => $target, 'max_limit' => $maxLimit]);
+
         return $this->queueRow($queue);
     }
 
@@ -279,6 +284,8 @@ class MockMikroTikService implements MikroTikServiceInterface
             'disabled' => array_key_exists('disabled', $data) ? (bool) $data['disabled'] : $queue->disabled,
         ]);
 
+        $this->logActivity('queue.updated', "Bandwidth queue '{$name}' updated.", ['name' => $name]);
+
         return true;
     }
 
@@ -291,6 +298,7 @@ class MockMikroTikService implements MikroTikServiceInterface
         }
 
         $queue->delete();
+        $this->logActivity('queue.deleted', "Bandwidth queue '{$name}' deleted.", ['name' => $name]);
 
         return true;
     }
@@ -316,6 +324,7 @@ class MockMikroTikService implements MikroTikServiceInterface
     public function reboot(): bool
     {
         $this->system()->update(['uptime_seconds' => 0]);
+        $this->logActivity('router.rebooted', "Router '{$this->mikrotik->name}' rebooted (demo mode).");
 
         return true;
     }
@@ -394,6 +403,19 @@ class MockMikroTikService implements MikroTikServiceInterface
     private function sessions()
     {
         return MockMikrotikSession::where('mikrotik_id', $this->mikrotik->id);
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    private function logActivity(string $eventType, string $description, array $meta = []): void
+    {
+        MikrotikActivityLog::on($this->mikrotik->getConnectionName())->create([
+            'mikrotik_id' => $this->mikrotik->id,
+            'event_type' => $eventType,
+            'description' => $description,
+            'meta' => $meta,
+        ]);
     }
 
     private function userRow(MockMikrotikUser $user): array

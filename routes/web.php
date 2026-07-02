@@ -7,6 +7,7 @@ use App\Http\Controllers\API\IntegrationController;
 use App\Http\Controllers\API\Mikrotik\MikrotikController;
 use App\Http\Controllers\API\OltController;
 use App\Http\Controllers\API\PackageController;
+use App\Http\Controllers\API\SettingsController;
 use App\Http\Controllers\API\SubZoneController;
 use App\Http\Controllers\API\ZoneController;
 use App\Http\Controllers\LandlordTenantController;
@@ -110,6 +111,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/{mikrotik}', [MikrotikController::class, 'update'])->name('update');
             Route::delete('/{mikrotik}', [MikrotikController::class, 'destroy'])->name('destroy');
             Route::post('/{mikrotik}/check-connection', [MikrotikController::class, 'checkConnection'])->name('check-connection');
+            Route::post('/{mikrotik}/sync', [MikrotikController::class, 'sync'])->name('sync');
+            Route::post('/{mikrotik}/enable', [MikrotikController::class, 'enable'])->name('enable');
+            Route::post('/{mikrotik}/disable', [MikrotikController::class, 'disable'])->name('disable');
+            Route::post('/{mikrotik}/set-default', [MikrotikController::class, 'setDefault'])->name('set-default');
+            Route::patch('/{mikrotik}/mode', [MikrotikController::class, 'updateMode'])->name('update-mode');
 
             // Real-time monitoring of a specific router
             Route::get('/{mikrotik}/stats', [MikrotikController::class, 'getLiveStats'])->name('mikrotik.stats');
@@ -131,6 +137,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('sms-gateways/{smsGateway}/test', [IntegrationController::class, 'testSmsGateway'])->name('sms-gateways.test');
         });
         // --- INTEGRATIONS (SMS GATEWAYS) ---
+
+        // --- SETTINGS ---
+        Route::prefix('settings')->name('settings.')->middleware('tenant.module:mikrotik')->group(function () {
+            Route::get('mikrotik-mode', [SettingsController::class, 'editMikrotikMode'])->name('mikrotik-mode.edit');
+            Route::post('mikrotik-mode', [SettingsController::class, 'updateMikrotikMode'])->name('mikrotik-mode.update');
+        });
+        // --- SETTINGS ---
 
         // --- FUTURE: SUBSCRIBERS & BILLING ---
         // Route::resource('subscribers', SubscriberController::class);

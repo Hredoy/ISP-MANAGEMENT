@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Mikrotik;
 use App\Models\TenantApplication;
 use App\Models\User;
-use App\Services\MikroTikService;
 use App\Services\TenantProvisioningService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -47,11 +46,9 @@ class MikrotikRouterTest extends TestCase
         $user->setConnection('tenant');
         $user->save();
 
-        $this->mock(MikroTikService::class)
-            ->shouldReceive('testConnection')
-            ->once()
-            ->andReturn(['ok' => true, 'message' => 'CONNECTION_OK', 'stats' => []]);
-
+        // mode=demo makes store() skip the live RouterOS connection test entirely (see
+        // MikrotikController::store()) - the exact production path a router deliberately
+        // marked Demo Mode takes, so no router or service double is needed here.
         $response = $this
             ->actingAs($user)
             ->post('http://router-isp.localhost/dashboard/mikrotik', [
@@ -61,6 +58,7 @@ class MikrotikRouterTest extends TestCase
                 'username' => 'admin',
                 'password' => 'secret',
                 'description' => 'Main gateway',
+                'mode' => 'demo',
             ]);
 
         $response

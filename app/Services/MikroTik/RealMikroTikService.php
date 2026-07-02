@@ -9,6 +9,7 @@ use App\Events\RouterConnected;
 use App\Events\RouterDisconnected;
 use App\Models\Client as ISPClient;
 use App\Models\Mikrotik;
+use App\Models\MikrotikActivityLog;
 use App\Services\MikroTik\Contracts\MikroTikServiceInterface;
 use App\Services\MikroTik\Exceptions\MikroTikAuthenticationException;
 use App\Services\MikroTik\Exceptions\MikroTikCommandException;
@@ -254,6 +255,7 @@ class RealMikroTikService implements MikroTikServiceInterface
         }
 
         $this->write($client, (new Query('/ppp/secret/set'))->equal('.id', $secret['.id'])->equal('disabled', 'no'));
+        $this->logActivity('ppp_user.enabled', "PPPoE user '{$username}' enabled.", ['username' => $username]);
 
         return true;
     }
@@ -269,6 +271,7 @@ class RealMikroTikService implements MikroTikServiceInterface
 
         $this->write($client, (new Query('/ppp/secret/set'))->equal('.id', $secret['.id'])->equal('disabled', 'yes'));
         $this->disconnectActiveSession($username);
+        $this->logActivity('ppp_user.disabled', "PPPoE user '{$username}' disabled.", ['username' => $username]);
 
         return true;
     }
@@ -320,7 +323,10 @@ class RealMikroTikService implements MikroTikServiceInterface
                 ->equal('max-limit', $maxLimit);
         }
 
-        return $this->write($client, $query);
+        $result = $this->write($client, $query);
+        $this->logActivity('queue.upserted', "Bandwidth queue '{$name}' set to {$maxLimit} for {$target}.", ['name' => $name, 'target' => $target, 'max_limit' => $maxLimit]);
+
+        return $result;
     }
 
     public function updateQueue(string $name, array $data): bool
@@ -350,6 +356,7 @@ class RealMikroTikService implements MikroTikServiceInterface
         }
 
         $this->write($client, $query);
+        $this->logActivity('queue.updated', "Bandwidth queue '{$name}' updated.", ['name' => $name]);
 
         return true;
     }
@@ -367,6 +374,7 @@ class RealMikroTikService implements MikroTikServiceInterface
         }
 
         $this->write($client, (new Query('/queue/simple/remove'))->equal('.id', $existing[0]['.id']));
+        $this->logActivity('queue.deleted', "Bandwidth queue '{$name}' deleted.", ['name' => $name]);
 
         return true;
     }
@@ -386,6 +394,7 @@ class RealMikroTikService implements MikroTikServiceInterface
         $client = $this->getClient();
 
         $this->write($client, new Query('/system/reboot'));
+        $this->logActivity('router.rebooted', "Router '{$this->mikrotik->name}' rebooted.");
 
         return true;
     }
@@ -450,15 +459,30 @@ class RealMikroTikService implements MikroTikServiceInterface
             return $this->client;
         } catch (BadCredentialsException $e) {
             Log::error('MikroTik authentication failed: '.$e->getMessage());
+            $this->logActivity('router.connection_failed', "Authentication failed for router '{$this->mikrotik->name}'.", ['reason' => $e->getMessage()]);
             event(new RouterDisconnected($this->mikrotik, $e->getMessage()));
 
             throw new MikroTikAuthenticationException('AUTH_FAILED: Invalid credentials.', previous: $e);
         } catch (ClientException|StreamException $e) {
             Log::error('MikroTik Connection Failed: '.$e->getMessage());
+            $this->logActivity('router.connection_failed', "Connection failed for router '{$this->mikrotik->name}'.", ['reason' => $e->getMessage()]);
             event(new RouterDisconnected($this->mikrotik, $e->getMessage()));
 
             throw new MikroTikConnectionException('OFFLINE: '.$e->getMessage(), previous: $e);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    private function logActivity(string $eventType, string $description, array $meta = []): void
+    {
+        MikrotikActivityLog::on($this->mikrotik->getConnectionName())->create([
+            'mikrotik_id' => $this->mikrotik->id,
+            'event_type' => $eventType,
+            'description' => $description,
+            'meta' => $meta,
+        ]);
     }
 
     /**

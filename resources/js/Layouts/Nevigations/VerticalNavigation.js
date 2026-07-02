@@ -41,6 +41,7 @@ export const navItems = [
         children: [
             { name: 'LIST_ROUTERS', href: '/dashboard/mikrotik', icon: List, component: 'Mikrotik/Index', module: 'mikrotik' },
             { name: 'ADD_NEW', href: '/dashboard/mikrotik/create', icon: Plus, component: 'Mikrotik/Create', module: 'mikrotik' },
+            { name: 'ROUTER_MODE', href: '/dashboard/settings/mikrotik-mode', icon: Settings, component: 'Settings/MikrotikMode', module: 'mikrotik' },
         ]
     },
     {

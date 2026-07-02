@@ -4,6 +4,7 @@ namespace App\Services\MikroTik;
 
 use App\Models\Mikrotik;
 use App\Models\Setting;
+use App\Services\MikroTik\DTO\ModeResolution;
 
 /**
  * Resolves the effective Real/Demo mode for a router: an explicit per-router override wins,
@@ -20,11 +21,20 @@ class ModeResolver
      */
     public function resolve(Mikrotik $mikrotik): string
     {
+        return $this->resolveWithSource($mikrotik)->mode;
+    }
+
+    /**
+     * Same resolution as resolve(), plus which source decided it - lets the admin panel explain
+     * *why* a router is in a given mode instead of just showing the end result.
+     */
+    public function resolveWithSource(Mikrotik $mikrotik): ModeResolution
+    {
         if (in_array($mikrotik->mode, [self::MODE_DEMO, self::MODE_REAL], true)) {
-            return $mikrotik->mode;
+            return new ModeResolution($mikrotik->mode, ModeResolution::SOURCE_ROUTER_OVERRIDE);
         }
 
-        return $this->globalMode();
+        return new ModeResolution($this->globalMode(), ModeResolution::SOURCE_GLOBAL);
     }
 
     /**
