@@ -89,6 +89,7 @@ class MockMikroTikService implements MikroTikServiceInterface
     public function createPPPProfile(array $data): array
     {
         $profile = $this->profiles()->create([
+            'mikrotik_id' => $this->mikrotik->id,
             'name' => $data['name'],
             'rate_limit' => $data['rate_limit'] ?? null,
             'local_address' => $data['local_address'] ?? null,
@@ -148,10 +149,12 @@ class MockMikroTikService implements MikroTikServiceInterface
         }
 
         $user = $this->users()->create([
+            'mikrotik_id' => $this->mikrotik->id,
             'username' => $name,
             'password' => $password,
             'profile' => $data['profile'] ?? 'default',
             'service' => $data['service'] ?? 'pppoe',
+            'disabled' => false,
             'local_address' => $data['local-address'] ?? null,
             'remote_address' => $data['remote-address'] ?? null,
             'comment' => $data['comment'] ?? null,
@@ -262,7 +265,7 @@ class MockMikroTikService implements MikroTikServiceInterface
     {
         $queue = $this->queues()->updateOrCreate(
             ['mikrotik_id' => $this->mikrotik->id, 'name' => $name],
-            ['target' => $target, 'max_limit' => $maxLimit],
+            ['target' => $target, 'max_limit' => $maxLimit, 'disabled' => false],
         );
 
         $this->logActivity('queue.upserted', "Bandwidth queue '{$name}' set to {$maxLimit} for {$target}.", ['name' => $name, 'target' => $target, 'max_limit' => $maxLimit]);

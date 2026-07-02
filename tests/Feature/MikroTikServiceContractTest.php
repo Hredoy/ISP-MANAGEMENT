@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Mikrotik;
 use App\Models\MikrotikActivityLog;
+use App\Models\Tenant;
 use App\Models\TenantApplication;
 use App\Services\MikroTik\Contracts\MikroTikServiceInterface;
 use App\Services\MikroTik\MockMikroTikService;
@@ -27,6 +28,8 @@ class MikroTikServiceContractTest extends TestCase
 
     private string $tenantDatabase;
 
+    private ?Tenant $tenant = null;
+
     protected function tearDown(): void
     {
         $this->dropTestTenantDatabases();
@@ -38,12 +41,21 @@ class MikroTikServiceContractTest extends TestCase
     {
         $router = $this->setupTenant('contract-mock');
 
+        // MockMikroTikService's internal queries (MockMikrotikUser::where(...), etc.) don't
+        // specify a connection - in production that's fine because tenancy()->initialize()
+        // (called by SetTenantDatabase middleware / tenants:run) has already swapped the
+        // *default* connection by the time MikroTikServiceFactory constructs it. Reproduce that
+        // here for real rather than just swapping the named 'tenant' connection.
+        tenancy()->initialize($this->tenant);
+
         $this->assertPppoeAndQueueLifecycle(new MockMikroTikService($router), $router);
     }
 
     public function test_pppoe_and_queue_lifecycle_against_real_service_with_fake_client(): void
     {
         $router = $this->setupTenant('contract-real');
+
+        tenancy()->initialize($this->tenant);
 
         $this->assertPppoeAndQueueLifecycle(new RealMikroTikService($router, new FakeRouterOsClient), $router);
     }
@@ -100,6 +112,7 @@ class MikroTikServiceContractTest extends TestCase
         ]), 'secret-'.$slug);
 
         $this->tenantDatabase = $application->database_name;
+        $this->tenant = $application->tenant;
         $this->reconnectTenant();
 
         return Mikrotik::on('tenant')->create([

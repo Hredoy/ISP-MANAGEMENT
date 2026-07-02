@@ -86,10 +86,17 @@ class MikrotikActivityLoggingTest extends TestCase
         $this->tenantDatabase = $application->database_name;
         $this->reconnectTenant();
 
-        return Mikrotik::on('tenant')->create([
+        $router = Mikrotik::on('tenant')->create([
             'name' => 'Activity Router', 'host' => '10.0.0.1', 'port' => 8728,
             'username' => 'admin', 'password' => 'secret',
         ]);
+
+        // MockMikroTikService's internal queries don't specify a connection - in production
+        // that's fine because tenancy()->initialize() has already swapped the *default*
+        // connection by the time MikroTikServiceFactory constructs it. Reproduce that here.
+        tenancy()->initialize($application->tenant);
+
+        return $router;
     }
 
     private function reconnectTenant(): void
