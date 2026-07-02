@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\TenantPermissionService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -30,6 +31,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $enabledModules = [];
+        $permissions = [];
         $tenantStatus = null;
 
         if (tenancy()->initialized && tenant()) {
@@ -42,6 +44,16 @@ class HandleInertiaRequests extends Middleware
                 ->pluck('module.slug')
                 ->values()
                 ->all();
+
+            if ($request->user()) {
+                $allowed = app(TenantPermissionService::class)->allowedPermissionNames();
+                $permissions = $request->user()
+                    ->getAllPermissions()
+                    ->pluck('name')
+                    ->intersect($allowed)
+                    ->values()
+                    ->all();
+            }
         }
 
         return [
@@ -53,6 +65,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'auth' => [
                 'user' => $request->user(),
+                'permissions' => $permissions,
             ],
             'tenant' => [
                 'status' => $tenantStatus,

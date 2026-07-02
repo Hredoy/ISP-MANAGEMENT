@@ -20,4 +20,19 @@ interface OltDriverInterface
      * @return array{ok: bool, message: string}
      */
     public function unbindOnu(array $params): array;
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function listOnus(): array;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getOpticalInfo(string $ponPort, string $onuId): array;
+
+    /**
+     * @return array{color: string, emoji: string, label: string}
+     */
+    public function signalColor(?float $rxDbm): array;
 }

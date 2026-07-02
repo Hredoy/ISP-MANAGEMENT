@@ -2,7 +2,6 @@
 import ISPLayout from '@/Layouts/ISPLayout.vue';
 import { useForm, Head, Link } from '@inertiajs/vue3';
 import { Save, ChevronLeft, ShieldAlert } from 'lucide-vue-next';
-import { computed } from 'vue';
 
 defineOptions({ layout: ISPLayout });
 
@@ -20,8 +19,6 @@ const form = useForm({
     snmp_community: props.olt.snmp_community ?? '',
     is_active: !!props.olt.is_active,
 });
-
-const isSnmp = computed(() => form.vendor === 'vsol');
 
 const submit = () => {
     form.put(route('dashboard.olts.update', props.olt.id));
@@ -67,7 +64,9 @@ const submit = () => {
                     <select v-model="form.vendor" class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
                         <option value="huawei">Huawei</option>
                         <option value="zte">ZTE</option>
+                        <option value="bdcom">BDCOM P3310</option>
                         <option value="vsol">VSOL (SNMP)</option>
+                        <option value="auto">Auto Detect (SNMP sysDescr)</option>
                     </select>
                 </div>
                 <div>
@@ -86,25 +85,21 @@ const submit = () => {
                     <label for="is_active" class="text-[10px] text-primary/60 uppercase tracking-widest">Active</label>
                 </div>
 
-                <template v-if="!isSnmp">
-                    <div>
-                        <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Login_User</label>
-                        <input v-model="form.username" type="text"
-                               class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Auth_Key</label>
-                        <input v-model="form.password" type="password"
-                               class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
-                    </div>
-                </template>
-                <template v-else>
-                    <div class="md:col-span-2">
-                        <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">SNMP_Community</label>
-                        <input v-model="form.snmp_community" type="text"
-                               class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
-                    </div>
-                </template>
+                <div>
+                    <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Login_User</label>
+                    <input v-model="form.username" type="text"
+                           class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">Auth_Key</label>
+                    <input v-model="form.password" type="password"
+                           class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] text-primary/60 mb-2 uppercase tracking-widest">SNMP_Community</label>
+                    <input v-model="form.snmp_community" type="text"
+                           class="w-full bg-surface border border-primary/20 p-3 text-primary outline-none">
+                </div>
 
                 <div class="md:col-span-2 pt-4">
                     <button :disabled="form.processing"

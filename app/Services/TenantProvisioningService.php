@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
 
 class TenantProvisioningService
 {
@@ -98,16 +99,25 @@ class TenantProvisioningService
             throw new \RuntimeException('A tenant already exists for this admin email.');
         }
 
-        $tenant = Tenant::find($tenantId) ?? Tenant::create([
-            'id' => $tenantId,
-            'organization_name' => $application->organization_name,
-            'owner_name' => $application->owner_name ?: $application->contact_name,
-            'admin_email' => $application->email,
-            'status' => Tenant::STATUS_PENDING_SETUP,
-            'database_status' => 'pending',
-            'domain_status' => 'pending',
-        ]);
-        $databaseName = $application->database_name ?: $tenant->database()->getName();
+        $databaseName = $this->tenantDatabaseName($application, $tenantId);
+        $tenant = Tenant::find($tenantId);
+
+        if (! $tenant) {
+            $tenant = new Tenant([
+                'id' => $tenantId,
+                'organization_name' => $application->organization_name,
+                'owner_name' => $application->owner_name ?: $application->contact_name,
+                'admin_email' => $application->email,
+                'status' => Tenant::STATUS_PENDING_SETUP,
+                'database_name' => $databaseName,
+                'database_status' => 'pending',
+                'domain_status' => 'pending',
+            ]);
+            $tenant->setInternal('db_name', $databaseName);
+            $tenant->save();
+        } else {
+            $tenant->setInternal('db_name', $databaseName)->save();
+        }
 
         $this->logStep($application, $tenant, 'tenant_record', 'completed', 'Tenant record created or reused.');
 
@@ -122,7 +132,7 @@ class TenantProvisioningService
                 'domain_status' => 'pending',
             ]);
 
-            DB::statement(sprintf('CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci', str_replace('`', '``', $databaseName)));
+            $this->createTenantDatabase($databaseName);
             $tenant->update(['database_status' => 'created']);
             $this->logStep($application, $tenant, 'database_created', 'completed', 'Tenant database is ready.');
 
@@ -234,17 +244,31 @@ class TenantProvisioningService
 
     private function runTenantMigrations(string $databaseName): void
     {
-        $this->setTenantConnection($databaseName);
+        $attempts = app()->environment('testing') ? 5 : 2;
 
-        Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--path' => 'database/migrations/tenant',
-            '--force' => true,
-        ]);
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $this->createTenantDatabase($databaseName);
+            $this->setTenantConnection($databaseName);
+
+            try {
+                $this->migrateTenantDatabase();
+
+                return;
+            } catch (QueryException $exception) {
+                if (! $this->isUnknownDatabaseException($exception) || $attempt === $attempts) {
+                    throw $exception;
+                }
+
+                DB::purge('tenant');
+                usleep(100000 * $attempt);
+            }
+        }
+
     }
 
     private function seedTenant(string $databaseName, TenantApplication $application, string $adminPassword): void
     {
+        $this->createTenantDatabase($databaseName);
         $this->setTenantConnection($databaseName);
 
         DB::connection('tenant')->transaction(function () use ($application, $adminPassword): void {
@@ -342,6 +366,66 @@ class TenantProvisioningService
 
         DB::purge('tenant');
         DB::reconnect('tenant');
+    }
+
+    private function createTenantDatabase(string $databaseName): void
+    {
+        $connection = $this->databaseAdminConnection();
+
+        $connection->statement(sprintf(
+            'CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+            str_replace('`', '``', $databaseName)
+        ));
+
+        DB::purge('tenant_admin');
+    }
+
+    private function migrateTenantDatabase(): void
+    {
+        Artisan::call('migrate', [
+            '--database' => 'tenant',
+            '--path' => 'database/migrations/tenant',
+            '--force' => true,
+        ]);
+    }
+
+    private function isUnknownDatabaseException(QueryException $exception): bool
+    {
+        return (int) ($exception->errorInfo[1] ?? 0) === 1049;
+    }
+
+    private function tenantDatabaseName(TenantApplication $application, string $tenantId): string
+    {
+        if ($application->database_name) {
+            return $this->sanitizeDatabaseName($application->database_name);
+        }
+
+        $prefix = config('tenancy.database.prefix', 'tenant_');
+        $suffix = config('tenancy.database.suffix', '');
+        $safeTenantId = $this->sanitizeDatabaseName($tenantId);
+
+        return $prefix.$safeTenantId.$suffix;
+    }
+
+    private function sanitizeDatabaseName(string $databaseName): string
+    {
+        return Str::of($databaseName)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9_]+/', '_')
+            ->trim('_')
+            ->value();
+    }
+
+    private function databaseAdminConnection(): \Illuminate\Database\ConnectionInterface
+    {
+        Config::set('database.connections.tenant_admin', array_replace(
+            Config::get('database.connections.mysql', []),
+            ['database' => null]
+        ));
+
+        DB::purge('tenant_admin');
+
+        return DB::connection('tenant_admin');
     }
 
     private function uniqueSlug(string $organizationName): string
@@ -471,6 +555,7 @@ class TenantProvisioningService
             ['name' => 'SMS', 'slug' => 'sms'],
             ['name' => 'Reports', 'slug' => 'reports'],
             ['name' => 'Employees', 'slug' => 'employees'],
+            ['name' => 'Human Resources', 'slug' => 'hrm'],
             ['name' => 'Accounting', 'slug' => 'accounting'],
             ['name' => 'Inventory', 'slug' => 'inventory'],
             ['name' => 'Settings', 'slug' => 'settings'],

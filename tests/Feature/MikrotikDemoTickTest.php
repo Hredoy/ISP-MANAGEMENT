@@ -26,7 +26,6 @@ class MikrotikDemoTickTest extends TestCase
 
     protected function tearDown(): void
     {
-        tenancy()->end();
         $this->dropTestTenantDatabases();
 
         parent::tearDown();
@@ -139,12 +138,5 @@ class MikrotikDemoTickTest extends TestCase
         DB::reconnect('tenant');
     }
 
-    private function dropTestTenantDatabases(): void
-    {
-        foreach (DB::select("SHOW DATABASES LIKE 'test\\_tenant\\_%'") as $row) {
-            $database = array_values((array) $row)[0];
-
-            DB::statement('DROP DATABASE IF EXISTS `'.str_replace('`', '``', $database).'`');
-        }
-    }
+    // dropTestTenantDatabases() now lives on the base Tests\TestCase (see tests/TestCase.php).
 }

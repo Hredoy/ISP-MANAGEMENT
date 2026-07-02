@@ -22,6 +22,18 @@ return [
         'resellers',
         'ftp_accounts',
         'reports',
+        'hrm',
+        'employees',
+        'departments',
+        'designations',
+        'teams',
+        'office_locations',
+        'shifts',
+        'attendance',
+        'leave_management',
+        'payroll',
+        'employee_documents',
+        'role_permissions',
     ],
 
     'actions' => ['view', 'create', 'edit', 'delete'],
@@ -46,6 +58,49 @@ return [
         'Client' => [
             'packages.view', 'payments.view', 'tickets.view', 'tickets.create',
         ],
+        'Tenant Admin' => ['*'],
+        'HR Manager' => [
+            'hrm.view', 'employees.*', 'departments.*', 'designations.*', 'teams.*',
+            'office_locations.*', 'shifts.*', 'attendance.*', 'leave_management.*',
+            'employee_documents.*', 'role_permissions.view', 'role_permissions.edit',
+        ],
+        'Accounts Manager' => [
+            'hrm.view', 'employees.view', 'attendance.view', 'leave_management.view',
+            'payroll.*', 'payments.*', 'reports.view',
+        ],
+        'Employee' => [
+            'hrm.view', 'employees.view', 'attendance.view', 'leave_management.view',
+            'employee_documents.view',
+        ],
+    ],
+
+    'tenant_default_roles' => ['Tenant Admin', 'HR Manager', 'Accounts Manager', 'Support Agent', 'Employee'],
+
+    'module_permission_map' => [
+        'hrm' => [
+            'hrm',
+            'employees',
+            'departments',
+            'designations',
+            'teams',
+            'office_locations',
+            'shifts',
+            'attendance',
+            'leave_management',
+            'payroll',
+            'employee_documents',
+            'role_permissions',
+        ],
+        'customers' => ['clients'],
+        'packages' => ['packages'],
+        'billing' => ['payments', 'payment_transactions'],
+        'payments' => ['payments', 'payment_transactions'],
+        'mikrotik' => ['devices'],
+        'olt' => ['onus', 'devices'],
+        'support-tickets' => ['tickets'],
+        'sms' => ['notifications'],
+        'reports' => ['reports'],
+        'settings' => ['isp_settings', 'role_permissions'],
     ],
 
     'jwt' => [

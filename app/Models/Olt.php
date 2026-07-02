@@ -21,6 +21,11 @@ class Olt extends Model
         return $this->hasMany(Client::class);
     }
 
+    public function onus()
+    {
+        return $this->hasMany(Onu::class);
+    }
+
     protected function password(): Attribute
     {
         return Attribute::make(

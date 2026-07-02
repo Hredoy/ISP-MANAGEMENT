@@ -14,6 +14,8 @@ import {
     MonitorCog,
     Cable,
     Plug,
+    BriefcaseBusiness,
+    ShieldCheck,
 } from 'lucide-vue-next';
 export const navItems = [
     { name: 'DASHBOARD', href: '/dashboard', icon: LayoutDashboard, component: 'Dashboard' },
@@ -56,6 +58,22 @@ export const navItems = [
     { name: 'SUBSCRIBERS', href: '/dashboard/subscribers', icon: Users, component: 'Subscribers/Index' },
     { name: 'PACKAGES', href: '/dashboard/packages', icon: Zap, component: 'Packages/Index', module: 'packages' },
     { name: 'INTEGRATIONS', href: '/dashboard/integrations', icon: Plug, component: 'Integrations/Index', module: 'sms' },
+    {
+        name: 'HRM',
+        href: '/dashboard/hrm',
+        icon: BriefcaseBusiness,
+        component: 'Tenant/Hrm/Index',
+        module: 'hrm',
+        permission: 'hrm.view',
+    },
+    {
+        name: 'ROLE_PERMISSIONS',
+        href: '/dashboard/roles-permissions',
+        icon: ShieldCheck,
+        component: 'Tenant/Roles/Index',
+        module: 'hrm',
+        permission: 'role_permissions.view',
+    },
     { name: 'FRONTEND', href: '/dashboard/frontend', icon: MonitorCog, component: 'Tenant/FrontendAdmin', module: 'settings' },
     { name: 'BILLING', href: '/dashboard/billing', icon: CreditCard, component: 'Billing/Index', module: 'billing' },
     { name: 'SETTINGS', href: '/dashboard/settings', icon: Settings, component: 'Settings', module: 'settings' },

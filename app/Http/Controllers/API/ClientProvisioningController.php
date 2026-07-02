@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreClientRequest;
 use App\Models\Client;
 use App\Models\Mikrotik;
+use App\Models\Onu;
 use App\Models\Olt;
 use App\Models\Package;
 use App\Services\MikroTik\MikroTikServiceFactory;
@@ -90,6 +91,20 @@ class ClientProvisioningController extends Controller
             'onu_serial' => $data['onu_serial'] ?? null,
             'pon_port' => $data['pon_port'] ?? null,
         ]);
+
+        if (! empty($data['onu_serial'])) {
+            Onu::updateOrCreate(
+                ['serial_number' => $data['onu_serial']],
+                [
+                    'olt_id' => $data['olt_id'],
+                    'client_id' => $client->id,
+                    'mac_address' => $data['onu_mac'] ?? null,
+                    'pon_port' => $data['pon_port'] ?? null,
+                    'status' => 'bound',
+                    'last_seen_at' => now(),
+                ]
+            );
+        }
 
         return response()->json(['success' => true, 'message' => 'ONU_BOUND']);
     }

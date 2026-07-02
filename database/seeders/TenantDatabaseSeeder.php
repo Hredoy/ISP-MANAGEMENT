@@ -67,5 +67,7 @@ class TenantDatabaseSeeder extends Seeder
             'currency' => 'BDT',
             'billing_day' => 1,
         ]]);
+
+        $this->call(TenantHrmSeeder::class);
     }
 }
