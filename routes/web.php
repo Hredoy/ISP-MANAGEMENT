@@ -7,6 +7,7 @@ use App\Http\Controllers\API\IntegrationController;
 use App\Http\Controllers\API\Mikrotik\MikrotikController;
 use App\Http\Controllers\API\OltController;
 use App\Http\Controllers\API\PackageController;
+use App\Http\Controllers\API\PaymentSmsMatchController;
 use App\Http\Controllers\API\SettingsController;
 use App\Http\Controllers\API\SubZoneController;
 use App\Http\Controllers\API\ZoneController;
@@ -54,6 +55,11 @@ Route::middleware('throttle:10,1')->name('tenant.website.')->group(function () {
 
 Route::get('/apply-organization', [TenantApplicationController::class, 'create'])->name('tenant.apply.create');
 Route::post('/apply-organization', [TenantApplicationController::class, 'store'])->name('tenant.apply.store');
+
+// SMS reader companion app: device-token auth, no browser session.
+Route::post('/api/payments/sms-match', PaymentSmsMatchController::class)
+    ->middleware(['tenant.module:sms', 'auth.sms_device'])
+    ->name('api.payments.sms-match');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 

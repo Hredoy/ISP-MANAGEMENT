@@ -29,6 +29,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'auth.sms_device' => \App\Http\Middleware\AuthenticateSmsDevice::class,
+        ]);
+
+        // The SMS reader companion app authenticates via a device token bearer header,
+        // not a browser session, so it can't present a CSRF token.
+        $middleware->validateCsrfTokens(except: [
+            'api/payments/sms-match',
         ]);
 
         //
