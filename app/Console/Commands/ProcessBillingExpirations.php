@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Package;
 use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\SmsService;
+use App\Support\TenantCache;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
@@ -76,6 +77,10 @@ class ProcessBillingExpirations extends Command
                 'expiry_date' => $client->expiry_date,
             ]);
             $escalated++;
+        }
+
+        if ($restored > 0 || $suspended > 0) {
+            TenantCache::forgetDashboardAndClients();
         }
 
         $this->info("Restored: {$restored}, D-7 reminders: {$reminded7}, D-3 reminders: {$reminded3}, throttled: {$throttled}, suspended: {$suspended}, escalated: {$escalated}.");

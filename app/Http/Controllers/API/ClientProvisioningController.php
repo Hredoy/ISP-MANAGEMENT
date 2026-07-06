@@ -12,6 +12,7 @@ use App\Models\Package;
 use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\OltService;
 use App\Services\SmsService;
+use App\Support\TenantCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -30,6 +31,7 @@ class ClientProvisioningController extends Controller
         $data['expiry_date'] = now()->addDays(30)->toDateString();
 
         $client = Client::create([...$data, 'status' => 'Active']);
+        TenantCache::forgetDashboardAndClients();
 
         return response()->json(['success' => true, 'message' => 'CLIENT_RECORD_CREATED', 'client_id' => $client->id]);
     }

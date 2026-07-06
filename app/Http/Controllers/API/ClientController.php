@@ -11,6 +11,7 @@ use App\Models\Package;
 use App\Models\SubZone;
 use App\Models\Zone;
 use App\Services\MikroTik\MikroTikServiceFactory;
+use App\Support\TenantCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,12 +29,19 @@ class ClientController extends Controller
             : 'created_at';
         $direction = $request->string('direction')->toString() === 'asc' ? 'asc' : 'desc';
 
-        $clients = Client::with(['zone:id,name', 'sub_zone:id,name'])
+        // Only the plain, unparameterized listing (first page, no search/filter/sort) is safe to
+        // cache under one static key - every other combination of search/filter/sort/page is
+        // its own distinct result set and must always hit the database.
+        $isDefaultView = ! $request->anyFilled(['search', 'zone_id', 'status', 'package_name', 'sort', 'direction', 'page', 'per_page']);
+
+        $buildClients = fn () => Client::with(['zone:id,name', 'sub_zone:id,name'])
             ->search($request->string('search')->toString() ?: null)
             ->filter($request->only(['zone_id', 'status', 'package_name']))
             ->orderBy($sort, $direction)
             ->paginate((int) $request->integer('per_page', 25))
             ->withQueryString();
+
+        $clients = $isDefaultView ? TenantCache::rememberClients($buildClients) : $buildClients();
 
         return Inertia::render('Clients/Index', [
             'clients' => $clients,
@@ -72,6 +80,7 @@ class ClientController extends Controller
         }
 
         Client::create([...$data, 'status' => 'Active']);
+        TenantCache::forgetDashboardAndClients();
 
         return redirect()->route('dashboard.clients.index')->with('message', 'CLIENT_PROVISIONED_SUCCESSFULLY');
     }
@@ -123,6 +132,7 @@ class ClientController extends Controller
         }
 
         $client->update($data);
+        TenantCache::forgetDashboardAndClients();
 
         return redirect()->route('dashboard.clients.index')->with(
             $synced ? 'message' : 'error',
@@ -135,10 +145,12 @@ class ClientController extends Controller
         try {
             $factory->make($client->mikrotik)->removePPPoEUser($client->pppoe_username);
             $client->delete();
+            TenantCache::forgetDashboardAndClients();
 
             return back()->with('message', 'CLIENT_TERMINATED_AND_ROUTER_CLEANED');
         } catch (Throwable) {
             $client->delete();
+            TenantCache::forgetDashboardAndClients();
 
             return back()->with('error', 'DB_CLEANED_BUT_ROUTER_UNREACHABLE');
         }
@@ -153,6 +165,7 @@ class ClientController extends Controller
         }
 
         $client->update(['status' => 'Suspended']);
+        TenantCache::forgetDashboardAndClients();
 
         return back()->with('message', 'CLIENT_SUSPENDED');
     }
@@ -166,6 +179,7 @@ class ClientController extends Controller
         }
 
         $client->update(['status' => 'Active']);
+        TenantCache::forgetDashboardAndClients();
 
         return back()->with('message', 'CLIENT_UNSUSPENDED');
     }
