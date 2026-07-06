@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\ChatbotController;
+use App\Http\Controllers\API\BillingController;
 use App\Http\Controllers\API\ClientController;
 use App\Http\Controllers\API\ClientProvisioningController;
 use App\Http\Controllers\API\DashboardController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\API\OltController;
 use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\PaymentSmsMatchController;
 use App\Http\Controllers\API\SettingsController;
+use App\Http\Controllers\API\SubscriberController;
 use App\Http\Controllers\API\SubZoneController;
 use App\Http\Controllers\API\TicketController;
 use App\Http\Controllers\API\ZoneController;
@@ -165,6 +167,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
         // --- AI CHATBOT ---
 
+        Route::get('subscribers', [SubscriberController::class, 'index'])
+            ->middleware('tenant.module:customers')->name('subscribers.index');
+
+        Route::prefix('billing')->name('billing.')->middleware('tenant.module:billing')->group(function () {
+            Route::get('/', [BillingController::class, 'index'])->name('index');
+            Route::post('payments', [BillingController::class, 'storePayment'])->name('payments.store');
+        });
+
         // --- SUPPORT TICKETS ---
         Route::prefix('tickets')->name('tickets.')->group(function () {
             Route::get('/', [TicketController::class, 'index'])->name('index');
@@ -173,9 +183,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // --- SUPPORT TICKETS ---
 
         // --- SETTINGS ---
-        Route::prefix('settings')->name('settings.')->middleware('tenant.module:mikrotik')->group(function () {
-            Route::get('mikrotik-mode', [SettingsController::class, 'editMikrotikMode'])->name('mikrotik-mode.edit');
-            Route::post('mikrotik-mode', [SettingsController::class, 'updateMikrotikMode'])->name('mikrotik-mode.update');
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', [SettingsController::class, 'index'])->middleware('tenant.module:settings')->name('index');
+            Route::patch('/', [SettingsController::class, 'update'])->middleware('tenant.module:settings')->name('update');
+            Route::get('mikrotik-mode', [SettingsController::class, 'editMikrotikMode'])->middleware('tenant.module:mikrotik')->name('mikrotik-mode.edit');
+            Route::post('mikrotik-mode', [SettingsController::class, 'updateMikrotikMode'])->middleware('tenant.module:mikrotik')->name('mikrotik-mode.update');
         });
         // --- SETTINGS ---
 

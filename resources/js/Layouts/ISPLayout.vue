@@ -51,13 +51,13 @@ onMounted(() => {
     <div :class="{ 'dark': isDark }" class="min-h-screen font-sans transition-colors duration-300">
         <div class="flex h-screen w-full overflow-hidden bg-terminal text-primary">
 
-            <aside :class="isSidebarOpen ? 'w-64' : 'w-20'" class="flex flex-col transition-all duration-300 bg-surface border-r border-primary/20">
-                <div class="p-6 font-bold border-b border-primary/20">
+            <aside :class="isSidebarOpen ? 'w-64' : 'w-20'" class="flex flex-col min-h-0 transition-all duration-300 bg-surface border-r border-primary/20">
+                <div class="shrink-0 p-6 font-bold border-b border-primary/20">
                     <span v-if="isSidebarOpen" class="text-primary">CoreISP</span>
                     <span v-else>#</span>
                 </div>
 
-                <nav class="flex-1 mt-6 px-3 space-y-2">
+                <nav class="sidebar-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden mt-6 px-3 pb-6 space-y-2">
                     <div v-for="item in visibleNavItems" :key="item.name">
                         <Link v-if="!item.children" :href="item.href" prefetch
                               class="flex items-center p-3 rounded-lg border transition-all"
@@ -120,3 +120,29 @@ onMounted(() => {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Slim, theme-matching scrollbar for the sidebar nav (Firefox). */
+.sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
+}
+
+/* Chrome/Edge/Safari */
+.sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(56, 189, 248, 0.4);
+    border-radius: 9999px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(56, 189, 248, 0.7);
+}
+</style>
