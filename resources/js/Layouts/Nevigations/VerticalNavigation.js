@@ -57,7 +57,7 @@ export const navItems = [
             { name: 'ADD_NEW_OLT', href: '/dashboard/olts/create', icon: Plus, component: 'Olts/Create', module: 'olt' },
         ]
     },
-    { name: 'SUBSCRIBERS', href: '/dashboard/subscribers', icon: Users, component: 'Subscribers/Index' },
+    { name: 'SUBSCRIBERS', href: '/dashboard/subscribers', icon: Users, component: 'Subscribers/Index', module: 'customers' },
     { name: 'PACKAGES', href: '/dashboard/packages', icon: Zap, component: 'Packages/Index', module: 'packages' },
     { name: 'INTEGRATIONS', href: '/dashboard/integrations', icon: Plug, component: 'Integrations/Index', module: 'sms' },
     { name: 'AI_ASSISTANT', href: '/dashboard/chatbot', icon: Bot, component: 'Chatbot/Index' },
@@ -80,5 +80,5 @@ export const navItems = [
     },
     { name: 'FRONTEND', href: '/dashboard/frontend', icon: MonitorCog, component: 'Tenant/FrontendAdmin', module: 'settings' },
     { name: 'BILLING', href: '/dashboard/billing', icon: CreditCard, component: 'Billing/Index', module: 'billing' },
-    { name: 'SETTINGS', href: '/dashboard/settings', icon: Settings, component: 'Settings', module: 'settings' },
+    { name: 'SETTINGS', href: '/dashboard/settings', icon: Settings, component: 'Settings/Index', module: 'settings' },
 ];

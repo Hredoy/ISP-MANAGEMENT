@@ -20,3 +20,7 @@ Schedule::command('tenants:run billing:process-expirations')->dailyAt('08:00')->
 
 // Auto-escalates support tickets that missed their SLA deadline (urgent: 2h, normal: 24h).
 Schedule::command('tenants:run tickets:escalate-overdue')->hourly()->withoutOverlapping();
+
+// Polls every MikroTik router's status/CPU (Redis-cached, DB written only on change) and
+// raises a fault if CPU stays over 90% for 5+ minutes. See App\Services\DevicePollingService.
+Schedule::command('tenants:run devices:poll')->everyThirtySeconds()->withoutOverlapping();
