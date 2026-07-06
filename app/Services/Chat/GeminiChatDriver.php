@@ -5,18 +5,12 @@ namespace App\Services\Chat;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-/**
- * Google Gemini Flash - free tier fallback (1,500 req/day at time of writing) for when Groq is
- * unavailable or its quota is exhausted. Requires GEMINI_API_KEY (config('services.gemini.key'));
- * ask() fails gracefully with ok=false when unset.
- */
 class GeminiChatDriver implements ChatDriverInterface
 {
-    private const MODEL = 'gemini-1.5-flash';
-
     public function ask(string $systemPrompt, string $message): array
     {
         $apiKey = config('services.gemini.key');
+        $model = config('services.gemini.model', 'gemini-2.5-flash-lite');
 
         if (! $apiKey) {
             return ['ok' => false, 'answer' => '', 'message' => 'GEMINI_API_KEY_NOT_CONFIGURED'];
@@ -24,7 +18,7 @@ class GeminiChatDriver implements ChatDriverInterface
 
         try {
             $response = Http::timeout(15)
-                ->post('https://generativelanguage.googleapis.com/v1beta/models/'.self::MODEL.":generateContent?key={$apiKey}", [
+                ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
                     'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
                     'contents' => [['parts' => [['text' => $message]]]],
                 ]);

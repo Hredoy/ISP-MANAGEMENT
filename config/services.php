@@ -39,10 +39,12 @@ return [
     // per-tenant-configurable integration like the SMS gateways in App\Models\SmsGateway.
     'groq' => [
         'key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.1-8b-instant'),
     ],
 
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash-lite'),
     ],
 
 ];

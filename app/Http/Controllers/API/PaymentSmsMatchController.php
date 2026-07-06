@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Events\PaymentReceivedBroadcast;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Payment;
@@ -122,6 +123,10 @@ class PaymentSmsMatchController extends Controller
         // Payment received: only the dashboard (revenue/recent-payments) and clients widgets
         // show payment-derived data - no need to flush devices/reports/ai_answer.
         TenantCache::forgetDashboardAndClients();
+
+        if ($status === 'completed') {
+            PaymentReceivedBroadcast::dispatch($payment);
+        }
 
         return response()->json([
             'status' => $status,

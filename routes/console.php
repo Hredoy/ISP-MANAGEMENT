@@ -17,3 +17,6 @@ Schedule::command('tenants:run mikrotik:demo:tick')->everyMinute()->withoutOverl
 // Daily billing ladder (expiry reminders, throttle, auto-suspend, escalation) for every
 // tenant - see App\Console\Commands\ProcessBillingExpirations for the full step breakdown.
 Schedule::command('tenants:run billing:process-expirations')->dailyAt('08:00')->withoutOverlapping();
+
+// Auto-escalates support tickets that missed their SLA deadline (urgent: 2h, normal: 24h).
+Schedule::command('tenants:run tickets:escalate-overdue')->hourly()->withoutOverlapping();
