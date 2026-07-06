@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Cache;
  * resolved in a request (see bootstrap/app.php's middleware prepend) - if that ordering ever
  * regresses, these keys would silently leak across tenants, so don't move that middleware.
  *
- * Only "dashboard", "clients", and "devices" are wired to real callers in this codebase today.
- * "reports:monthly" and "ai_answer:{hash}" are defined here per spec but have nothing to cache
- * yet - Advanced Reports and the AI chatbot are both still-TODO roadmap tasks.
+ * "dashboard", "clients", "devices", and "ai_answer:{hash}" (see App\Services\Chat\ChatbotService)
+ * are wired to real callers. "reports:monthly" is defined here per spec but has nothing to cache
+ * yet - Advanced Reports is still a TODO roadmap task.
  */
 class TenantCache
 {

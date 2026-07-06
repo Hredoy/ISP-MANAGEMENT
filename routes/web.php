@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\ChatbotController;
 use App\Http\Controllers\API\ClientController;
 use App\Http\Controllers\API\ClientProvisioningController;
 use App\Http\Controllers\API\DashboardController;
@@ -155,6 +156,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('sms-gateways/{smsGateway}/test', [IntegrationController::class, 'testSmsGateway'])->name('sms-gateways.test');
         });
         // --- INTEGRATIONS (SMS GATEWAYS) ---
+
+        // --- AI CHATBOT ---
+        Route::prefix('chatbot')->name('chatbot.')->group(function () {
+            Route::get('/', [ChatbotController::class, 'index'])->name('index');
+            Route::post('ask', [ChatbotController::class, 'ask'])->name('ask');
+        });
+        // --- AI CHATBOT ---
 
         // --- SETTINGS ---
         Route::prefix('settings')->name('settings.')->middleware('tenant.module:mikrotik')->group(function () {

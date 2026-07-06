@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    // AI chatbot (see App\Services\Chat\ChatbotService) - shared platform-level keys, not a
+    // per-tenant-configurable integration like the SMS gateways in App\Models\SmsGateway.
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
 ];

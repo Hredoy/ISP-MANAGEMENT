@@ -16,6 +16,7 @@ import {
     Plug,
     BriefcaseBusiness,
     ShieldCheck,
+    Bot,
 } from 'lucide-vue-next';
 export const navItems = [
     { name: 'DASHBOARD', href: '/dashboard', icon: LayoutDashboard, component: 'Dashboard' },
@@ -58,6 +59,7 @@ export const navItems = [
     { name: 'SUBSCRIBERS', href: '/dashboard/subscribers', icon: Users, component: 'Subscribers/Index' },
     { name: 'PACKAGES', href: '/dashboard/packages', icon: Zap, component: 'Packages/Index', module: 'packages' },
     { name: 'INTEGRATIONS', href: '/dashboard/integrations', icon: Plug, component: 'Integrations/Index', module: 'sms' },
+    { name: 'AI_ASSISTANT', href: '/dashboard/chatbot', icon: Bot, component: 'Chatbot/Index' },
     {
         name: 'HRM',
         href: '/dashboard/hrm',

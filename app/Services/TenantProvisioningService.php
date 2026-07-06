@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\KbArticle;
 use App\Models\Mikrotik;
 use App\Models\Module;
 use App\Models\Package;
@@ -341,7 +342,37 @@ class TenantProvisioningService
                 'sms_enabled' => in_array('sms', $application->module_request ?: [], true),
                 'email_enabled' => true,
             ]]);
+
+            foreach ($this->defaultKbArticles() as $article) {
+                KbArticle::on('tenant')->updateOrCreate(['question' => $article['question']], $article);
+            }
         });
+    }
+
+    private function defaultKbArticles(): array
+    {
+        return [
+            [
+                'question' => 'Internet is not working',
+                'keywords' => 'net nai,internet not working,no internet,net off,ইন্টারনেট নাই,নেট নাই',
+                'answer' => "We're sorry your internet is down. Please restart your router first. If it's still not working, our team will check your line and get back to you shortly.",
+            ],
+            [
+                'question' => 'Bill / payment question',
+                'keywords' => 'bill,payment,due,invoice,বিল,পেমেন্ট',
+                'answer' => 'You can pay your bill via bKash/Nagad/Rocket to the number provided by our office. Your current due amount and expiry date are shown in your account.',
+            ],
+            [
+                'question' => 'Internet is slow',
+                'keywords' => 'slow,speed,স্লো,স্পিড',
+                'answer' => 'Sorry for the slow speed. Please restart your router and check if other devices are using heavy bandwidth. If the issue continues, our technician will inspect your connection.',
+            ],
+            [
+                'question' => 'When will it be fixed?',
+                'keywords' => 'কখন ঠিক হবে,when will it be fixed,eta,when fixed',
+                'answer' => "Our team is aware of the issue and working on it. We'll update you as soon as it's resolved, usually within a few hours.",
+            ],
+        ];
     }
 
     private function defaultPackages(): array
