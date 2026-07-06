@@ -30,6 +30,7 @@ class TenantFrontendController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'is_enabled' => ['boolean'],
             'site_name' => ['nullable', 'string', 'max:255'],
             'logo' => ['nullable', 'string', 'max:1000'],
             'favicon' => ['nullable', 'string', 'max:1000'],

@@ -27,6 +27,7 @@ const props = defineProps({
 
 const page = usePage();
 const form = useForm({
+  is_enabled: props.settings.is_enabled ?? true,
   site_name: props.settings.site_name || '',
   logo: props.settings.logo || '',
   favicon: props.settings.favicon || '',
@@ -77,6 +78,12 @@ const submit = () => {
         Open_Website
       </a>
     </div>
+
+    <label class="flex items-center gap-3 border border-primary/20 bg-surface p-4 text-[11px] font-black uppercase">
+      <input v-model="form.is_enabled" type="checkbox" class="h-5 w-5" />
+      Public website enabled
+      <span class="font-normal normal-case text-primary/50">— turn off to take the site down instantly (404s to visitors).</span>
+    </label>
 
     <div v-if="page.props.flash?.success" class="border border-primary/30 bg-primary/10 p-4 text-[11px] font-black uppercase">
       {{ page.props.flash.success }}

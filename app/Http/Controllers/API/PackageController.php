@@ -39,6 +39,7 @@ class PackageController extends Controller
             'local_address' => 'nullable',
             'remote_address' => 'nullable',
             'description' => 'nullable',
+            'is_public' => 'boolean',
         ]);
 
         $router = Mikrotik::findOrFail($data['mikrotik_id']);
@@ -78,6 +79,7 @@ class PackageController extends Controller
             'local_address' => 'nullable',
             'remote_address' => 'nullable',
             'description' => 'nullable',
+            'is_public' => 'boolean',
         ]);
 
         $router = Mikrotik::findOrFail($data['mikrotik_id']);
