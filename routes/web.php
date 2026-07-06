@@ -64,6 +64,10 @@ Route::post('/api/payments/sms-match', PaymentSmsMatchController::class)
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(EnsureTenantContext::class)->name('dashboard');
+    Route::get('/dashboard/widgets/devices-status', [DashboardController::class, 'devicesStatus'])
+        ->middleware(EnsureTenantContext::class)->name('dashboard.widgets.devices-status');
+    Route::get('/dashboard/widgets/recent-payments', [DashboardController::class, 'recentPayments'])
+        ->middleware(EnsureTenantContext::class)->name('dashboard.widgets.recent-payments');
 
     Route::prefix('landlord')->name('landlord.')->group(function () {
         Route::get('/', [LandlordTenantController::class, 'index'])->name('index');

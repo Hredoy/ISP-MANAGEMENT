@@ -4,8 +4,18 @@ import ISPLayout from '@/Layouts/ISPLayout.vue';
 import VueApexCharts from 'vue3-apexcharts';
 import { Router, Users, Cpu, HardDrive, Clock, ArrowDown, ArrowUp, Activity } from 'lucide-vue-next';
 import axios from 'axios';
+import RevenueWidget from '@/Components/Dashboard/RevenueWidget.vue';
+import ClientCountsWidget from '@/Components/Dashboard/ClientCountsWidget.vue';
+import DevicesWidget from '@/Components/Dashboard/DevicesWidget.vue';
+import RecentPaymentsWidget from '@/Components/Dashboard/RecentPaymentsWidget.vue';
+import FaultAlertsWidget from '@/Components/Dashboard/FaultAlertsWidget.vue';
+import QuickActions from '@/Components/Dashboard/QuickActions.vue';
 
-const props = defineProps({ routers: Array });
+const props = defineProps({
+    routers: Array,
+    billing: { type: Object, default: () => ({}) },
+    recentPayments: { type: Array, default: () => [] },
+});
 defineOptions({ layout: ISPLayout });
 
 // --- STATE ---
@@ -105,6 +115,19 @@ onUnmounted(() => clearInterval(interval));
 
 <template>
     <div class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <RevenueWidget :revenue-today="billing.revenue_today ?? 0" :revenue-month="billing.revenue_month ?? 0" />
+            <ClientCountsWidget :active="billing.active_clients ?? 0" :suspended="billing.suspended_clients ?? 0" :expired="billing.expired_clients ?? 0" />
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <DevicesWidget />
+            <FaultAlertsWidget />
+            <QuickActions />
+        </div>
+
+        <RecentPaymentsWidget :initial-payments="recentPayments" />
+
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-primary/20 pb-6">
             <h1 class="text-2xl font-black text-primary uppercase italic tracking-tighter flex items-center gap-2">
                 <Activity class="animate-pulse" /> Live_Node_Monitor

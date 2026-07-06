@@ -59,7 +59,7 @@ onMounted(() => {
 
                 <nav class="flex-1 mt-6 px-3 space-y-2">
                     <div v-for="item in visibleNavItems" :key="item.name">
-                        <Link v-if="!item.children" :href="item.href"
+                        <Link v-if="!item.children" :href="item.href" prefetch
                               class="flex items-center p-3 rounded-lg border transition-all"
                               :class="$page.component === item.component ? 'bg-primary text-black' : 'text-primary hover:bg-primary/10 border-transparent'">
                             <component :is="item.icon" :size="18" />
@@ -75,7 +75,7 @@ onMounted(() => {
                             </button>
 
                             <div v-if="openSubMenu === item.name && isSidebarOpen" class="ml-6 mt-1 space-y-1 border-l border-primary/20">
-                                <Link v-for="child in item.children" :key="child.name" :href="child.href"
+                                <Link v-for="child in item.children" :key="child.name" :href="child.href" prefetch
                                       class="flex items-center p-2 pl-6 text-[10px] font-medium hover:text-ink transition-colors"
                                       :class="$page.component === child.component ? 'text-ink' : 'text-primary/60'">
                                     <component :is="child.icon" :size="14" class="mr-2" />
