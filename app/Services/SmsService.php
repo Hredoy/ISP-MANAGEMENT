@@ -47,6 +47,17 @@ class SmsService
     /**
      * @return array{ok: bool, message: string}
      */
+    public function sendExpiryReminder(Client $client, int $daysRemaining): array
+    {
+        $message = "Dear {$client->full_name}, your {$client->package_name} internet expires in ".
+            "{$daysRemaining} day(s) on {$client->expiry_date}. Please pay Tk {$client->monthly_bill} to avoid interruption.";
+
+        return $this->sendToClient($client, $message, 'Expiry reminder SMS');
+    }
+
+    /**
+     * @return array{ok: bool, message: string}
+     */
     private function sendToClient(Client $client, string $message, string $context): array
     {
         $gateway = SmsGateway::where('is_active', true)->first();

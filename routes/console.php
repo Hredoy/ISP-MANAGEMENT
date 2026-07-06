@@ -13,3 +13,7 @@ Artisan::command('inspire', function () {
 // tenant. Requires the server's cron to invoke `php artisan schedule:run` every minute (standard
 // Laravel requirement) - not something this repo can configure on its own.
 Schedule::command('tenants:run mikrotik:demo:tick')->everyMinute()->withoutOverlapping();
+
+// Daily billing ladder (expiry reminders, throttle, auto-suspend, escalation) for every
+// tenant - see App\Console\Commands\ProcessBillingExpirations for the full step breakdown.
+Schedule::command('tenants:run billing:process-expirations')->dailyAt('08:00')->withoutOverlapping();
