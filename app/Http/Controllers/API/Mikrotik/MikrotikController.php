@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\Mikrotik;
 
+use App\Events\DeviceStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Mikrotik;
 use App\Services\MikroTik\DTO\RouterDashboardStats;
@@ -180,10 +181,12 @@ class MikrotikController extends Controller
 
     public function checkConnection(Mikrotik $mikrotik, MikroTikServiceFactory $factory): JsonResponse
     {
+        $previousStatus = $mikrotik->status;
         $stats = $factory->make($mikrotik)->getSystemResources();
 
         if (isset($stats['error'])) {
             $mikrotik->forceFill(['status' => 'offline'])->save();
+            $this->broadcastStatusChangeIfNeeded($mikrotik, $previousStatus, 'offline');
 
             return response()->json([
                 'ok' => false,
@@ -192,12 +195,21 @@ class MikrotikController extends Controller
         }
 
         $mikrotik->forceFill(['last_ping' => now(), 'last_connected_at' => now(), 'status' => 'online'])->save();
+        $this->broadcastStatusChangeIfNeeded($mikrotik, $previousStatus, 'online');
 
         return response()->json([
             'ok' => true,
             'message' => 'CONNECTION_OK',
             'uptime' => $stats['uptime'] ?? null,
         ]);
+    }
+
+    /** "Device down -> red badge in nav": only broadcast on an actual transition, not every poll. */
+    private function broadcastStatusChangeIfNeeded(Mikrotik $mikrotik, ?string $previousStatus, string $newStatus): void
+    {
+        if ($previousStatus !== $newStatus) {
+            DeviceStatusChanged::dispatch($mikrotik, $newStatus);
+        }
     }
 
     public function getLiveStats(Mikrotik $mikrotik, MikroTikServiceFactory $factory): JsonResponse

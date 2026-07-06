@@ -11,6 +11,7 @@ use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\PaymentSmsMatchController;
 use App\Http\Controllers\API\SettingsController;
 use App\Http\Controllers\API\SubZoneController;
+use App\Http\Controllers\API\TicketController;
 use App\Http\Controllers\API\ZoneController;
 use App\Http\Controllers\LandlordTenantController;
 use App\Http\Controllers\ProfileController;
@@ -163,6 +164,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('ask', [ChatbotController::class, 'ask'])->name('ask');
         });
         // --- AI CHATBOT ---
+
+        // --- SUPPORT TICKETS ---
+        Route::prefix('tickets')->name('tickets.')->group(function () {
+            Route::get('/', [TicketController::class, 'index'])->name('index');
+            Route::post('/', [TicketController::class, 'store'])->name('store');
+        });
+        // --- SUPPORT TICKETS ---
 
         // --- SETTINGS ---
         Route::prefix('settings')->name('settings.')->middleware('tenant.module:mikrotik')->group(function () {
