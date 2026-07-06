@@ -9,6 +9,7 @@ use App\Services\MikroTik\Exceptions\MikroTikException;
 use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\MikroTik\RealMikroTikService;
 use App\Services\MikroTik\Resources\MikrotikResource;
+use App\Support\TenantCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -78,6 +79,9 @@ class MikrotikController extends Controller
             // Non-fatal - the router may simply have no PPPoE secrets configured yet.
         }
 
+        TenantCache::forgetDevices();
+        TenantCache::forgetDashboardAndClients();
+
         return redirect()->route('dashboard.mikrotik.index');
     }
 
@@ -102,6 +106,7 @@ class MikrotikController extends Controller
         ]);
 
         $mikrotik->update($data);
+        TenantCache::forgetDevices();
 
         return redirect()->route('dashboard.mikrotik.index')
             ->with('message', 'NODE_UPDATED_SUCCESSFULLY');
@@ -110,6 +115,7 @@ class MikrotikController extends Controller
     public function destroy(Mikrotik $mikrotik): RedirectResponse
     {
         $mikrotik->delete();
+        TenantCache::forgetDevices();
 
         return redirect()->back();
     }
@@ -148,6 +154,7 @@ class MikrotikController extends Controller
     public function enable(Mikrotik $mikrotik): RedirectResponse
     {
         $mikrotik->forceFill(['is_active' => true])->save();
+        TenantCache::forgetDevices();
 
         return back()->with('message', 'NODE_ENABLED');
     }
@@ -155,6 +162,7 @@ class MikrotikController extends Controller
     public function disable(Mikrotik $mikrotik): RedirectResponse
     {
         $mikrotik->forceFill(['is_active' => false])->save();
+        TenantCache::forgetDevices();
 
         return back()->with('message', 'NODE_DISABLED');
     }
@@ -165,6 +173,7 @@ class MikrotikController extends Controller
             $this->query()->where('id', '!=', $mikrotik->id)->update(['is_default' => false]);
             $mikrotik->forceFill(['is_default' => true])->save();
         });
+        TenantCache::forgetDevices();
 
         return back()->with('message', 'DEFAULT_NODE_SET');
     }

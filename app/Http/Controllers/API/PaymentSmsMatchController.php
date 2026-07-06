@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\PaymentTransaction;
 use App\Services\MikroTik\MikroTikServiceFactory;
 use App\Services\SmsService;
+use App\Support\TenantCache;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -117,6 +118,10 @@ class PaymentSmsMatchController extends Controller
 
             throw $e;
         }
+
+        // Payment received: only the dashboard (revenue/recent-payments) and clients widgets
+        // show payment-derived data - no need to flush devices/reports/ai_answer.
+        TenantCache::forgetDashboardAndClients();
 
         return response()->json([
             'status' => $status,

@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Mikrotik;
 use App\Models\Payment;
 use App\Services\MikroTik\MikroTikServiceFactory;
+use App\Support\TenantCache;
 use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,19 +17,25 @@ class DashboardController extends Controller
 {
     public function index(): Response
     {
-        $today = now()->toDateString();
+        $data = TenantCache::rememberDashboard(function () {
+            $today = now()->toDateString();
+
+            return [
+                'billing' => [
+                    'revenue_today' => (float) Payment::where('status', 'completed')->whereDate('paid_at', $today)->sum('amount'),
+                    'revenue_month' => (float) Payment::where('status', 'completed')
+                        ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])->sum('amount'),
+                    'active_clients' => Client::where('status', 'Active')->where('expiry_date', '>=', $today)->count(),
+                    'suspended_clients' => Client::where('status', 'Suspended')->count(),
+                    'expired_clients' => Client::where('status', '!=', 'Suspended')->where('expiry_date', '<', $today)->count(),
+                ],
+                'recentPayments' => $this->recentPaymentsQuery(),
+            ];
+        });
 
         return Inertia::render('Dashboard', [
             'routers' => Mikrotik::all(['id', 'name']),
-            'billing' => [
-                'revenue_today' => (float) Payment::where('status', 'completed')->whereDate('paid_at', $today)->sum('amount'),
-                'revenue_month' => (float) Payment::where('status', 'completed')
-                    ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])->sum('amount'),
-                'active_clients' => Client::where('status', 'Active')->where('expiry_date', '>=', $today)->count(),
-                'suspended_clients' => Client::where('status', 'Suspended')->count(),
-                'expired_clients' => Client::where('status', '!=', 'Suspended')->where('expiry_date', '<', $today)->count(),
-            ],
-            'recentPayments' => $this->recentPaymentsQuery(),
+            ...$data,
         ]);
     }
 
@@ -39,24 +46,26 @@ class DashboardController extends Controller
      */
     public function devicesStatus(MikroTikServiceFactory $factory): JsonResponse
     {
-        $routers = Mikrotik::all();
-        $online = 0;
+        return response()->json(TenantCache::rememberDevices(function () use ($factory) {
+            $routers = Mikrotik::all();
+            $online = 0;
 
-        foreach ($routers as $router) {
-            try {
-                if ($factory->make($router)->testConnection()['ok'] ?? false) {
-                    $online++;
+            foreach ($routers as $router) {
+                try {
+                    if ($factory->make($router)->testConnection()['ok'] ?? false) {
+                        $online++;
+                    }
+                } catch (Throwable) {
+                    // Counted as offline below.
                 }
-            } catch (Throwable) {
-                // Counted as offline below.
             }
-        }
 
-        return response()->json([
-            'total' => $routers->count(),
-            'online' => $online,
-            'offline' => $routers->count() - $online,
-        ]);
+            return [
+                'total' => $routers->count(),
+                'online' => $online,
+                'offline' => $routers->count() - $online,
+            ];
+        }));
     }
 
     public function recentPayments(): JsonResponse
