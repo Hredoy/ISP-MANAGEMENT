@@ -29,7 +29,10 @@ const props = defineProps({ packages: Array });
                         <Trash2 :size="16" />
                     </button>
                 </div>
-                <h3 class="text-ink font-bold text-lg mb-1 uppercase">{{ pkg.name }}</h3>
+                <h3 class="text-ink font-bold text-lg mb-1 uppercase flex items-center gap-2">
+                    {{ pkg.name }}
+                    <span v-if="!pkg.is_public" class="text-[9px] font-bold uppercase tracking-widest text-primary/40 border border-primary/20 px-1.5 py-0.5">Hidden</span>
+                </h3>
                 <p class="text-[10px] text-primary/50 mb-4 tracking-widest border-b border-primary/10 pb-2">ROUTER: {{ pkg.mikrotik.name }}</p>
 
                 <div class="space-y-2 text-[11px]">

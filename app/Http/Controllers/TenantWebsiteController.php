@@ -12,6 +12,7 @@ use App\Models\TenantFrontendSetting;
 use App\Models\TenantFrontendSlider;
 use App\Models\TenantManualPayment;
 use App\Models\TenantReferral;
+use App\Models\Zone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -193,13 +194,18 @@ class TenantWebsiteController extends Controller
             'sliders' => TenantFrontendSlider::on('tenant')->where('is_active', true)->orderBy('sort_order')->get(),
             'sections' => TenantFrontendSection::on('tenant')->where('is_enabled', true)->get()->keyBy('key'),
             'blogs' => TenantBlog::on('tenant')->where('is_published', true)->latest('published_at')->limit(3)->get(),
-            'packages' => Package::on('tenant')->orderBy('price')->get(['name', 'rate_limit', 'price', 'description'])->values(),
+            'packages' => Package::on('tenant')->where('is_public', true)->orderBy('price')->get(['name', 'rate_limit', 'price', 'description'])->values(),
+            'zones' => Zone::on('tenant')->orderBy('name')->pluck('name'),
         ];
     }
 
     private function assertTenantWebsite(): void
     {
         abort_unless(tenancy()->initialized, 404);
+
+        // "1-click enable" from the spec: defaults to true so existing tenants' sites keep
+        // working unchanged; an admin can flip this off in Frontend settings to take it down.
+        abort_if(data_get($this->frontendSettings(), 'is_enabled', true) === false, 404);
     }
 
     private function frontendSettings(): array

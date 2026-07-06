@@ -28,6 +28,7 @@ const props = defineProps({
   blogs: { type: Array, default: () => [] },
   sections: { type: Object, default: () => ({}) },
   packages: { type: Array, default: () => [] },
+  zones: { type: Array, default: () => [] },
   openModal: { type: String, default: null },
 });
 
@@ -323,6 +324,18 @@ onMounted(() => {
                 Get Now!
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="zones.length" id="coverage" class="bg-white py-14">
+        <div class="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+          <p class="text-sm font-black uppercase tracking-[0.28em] text-[#8cc63f]">Where we serve</p>
+          <h2 class="mt-3 text-3xl font-black uppercase text-[#0c315f]">Coverage areas</h2>
+          <div class="mt-8 flex flex-wrap justify-center gap-3">
+            <span v-for="zone in zones" :key="zone" class="rounded-full bg-[#f5fbff] px-5 py-2 text-sm font-bold text-[#0c315f] ring-1 ring-sky-100">
+              {{ zone }}
+            </span>
           </div>
         </div>
       </section>
