@@ -8,7 +8,7 @@ const props = defineProps({ routers: Array });
 
 const form = useForm({
     name: '', mikrotik_id: '', rate_limit: '10M/10M',
-    price: 0, local_address: '', remote_address: '', description: ''
+    price: 0, local_address: '', remote_address: '', description: '', is_public: true
 });
 </script>
 
@@ -62,6 +62,11 @@ const form = useForm({
                 <div class="col-span-2 space-y-1">
                     <label class="text-[10px] uppercase font-bold text-primary/70">Description</label>
                     <textarea v-model="form.description" rows="3" class="w-full bg-surface border border-primary/30 p-3 text-sm outline-none"></textarea>
+                </div>
+
+                <div class="col-span-2 flex items-center gap-2">
+                    <input v-model="form.is_public" type="checkbox" id="is_public" class="h-4 w-4">
+                    <label for="is_public" class="text-[10px] uppercase font-bold text-primary/70">Show on public website</label>
                 </div>
             </div>
 
