@@ -10,12 +10,21 @@ use Inertia\Inertia;
 class ZoneController extends Controller
 {
     public function index() {
-        return Inertia::render('Area/Zones', ['zones' => Zone::withCount('subZones')->get()]);
+        return Inertia::render('Area/Zones', ['zones' => Zone::withCount(['subZones', 'clients'])->get()]);
     }
 
     public function store(Request $request) {
         $data = $request->validate(['name' => 'required|unique:zones', 'code' => 'nullable']);
         Zone::create($data);
+        return back();
+    }
+
+    public function update(Request $request, Zone $zone) {
+        $data = $request->validate([
+            'name' => 'required|unique:zones,name,' . $zone->id,
+            'code' => 'nullable',
+        ]);
+        $zone->update($data);
         return back();
     }
 

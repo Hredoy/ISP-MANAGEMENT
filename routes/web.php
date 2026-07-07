@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\ChatbotController;
 use App\Http\Controllers\API\BillingController;
 use App\Http\Controllers\API\ClientController;
+use App\Http\Controllers\API\ClientImportController;
 use App\Http\Controllers\API\ClientProvisioningController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\IntegrationController;
@@ -96,6 +97,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // --- ZONE MANAGEMENT ---
 
         // --- CLIENT MANAGEMENT ---
+        Route::prefix('clients-import')->name('clients.import.')->middleware('tenant.module:customers')->group(function () {
+            Route::get('/', [ClientImportController::class, 'create'])->name('create');
+            Route::get('/template', [ClientImportController::class, 'template'])->name('template');
+            Route::post('/preview', [ClientImportController::class, 'preview'])->name('preview');
+            Route::post('/', [ClientImportController::class, 'import'])->name('store');
+        });
         Route::resource('clients', ClientController::class)->except('show')->middleware('tenant.module:customers');
         Route::post('clients/{client}/suspend', [ClientController::class, 'suspend'])
             ->middleware('tenant.module:customers')->name('clients.suspend');

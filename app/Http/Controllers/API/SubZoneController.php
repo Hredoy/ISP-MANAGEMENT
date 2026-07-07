@@ -24,9 +24,20 @@ class SubZoneController extends Controller
         return back();
     }
 
-    public function destroy(SubZone $zone): RedirectResponse
+    public function update(Request $request, SubZone $subZone): RedirectResponse
     {
-        $zone->delete();
+        $data = $request->validate([
+            'name' => 'required|unique:sub_zones,name,' . $subZone->id,
+            'zone_id' => 'required|exists:zones,id',
+            'manager_contact' => 'nullable',
+        ]);
+        $subZone->update($data);
+        return back();
+    }
+
+    public function destroy(SubZone $subZone): RedirectResponse
+    {
+        $subZone->delete();
         return back();
     }
 }

@@ -16,4 +16,12 @@ class Zone extends Model
     {
         return $this->hasMany(SubZone::class);
     }
+
+    /**
+     * @return HasMany
+     */
+    public function clients(): HasMany
+    {
+        return $this->hasMany(Client::class);
+    }
 }
