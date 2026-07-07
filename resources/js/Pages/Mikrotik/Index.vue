@@ -2,7 +2,7 @@
 import ISPLayout from '@/Layouts/ISPLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Activity, Cable, ChevronDown, ChevronUp, Pencil, Plus, Power, PowerOff, RefreshCw, Star, Trash2 } from 'lucide-vue-next';
+import { Activity, Cable, ChevronDown, ChevronUp, GitBranch, Pencil, Plus, Power, PowerOff, RefreshCw, Shield, Star, Trash2, Users } from 'lucide-vue-next';
 import { reactive } from 'vue';
 
 defineOptions({ layout: ISPLayout });
@@ -104,6 +104,15 @@ const setDefault = (node) => router.post(`/dashboard/mikrotik/${node.id}/set-def
                         </td>
                         <td class="p-4">
                             <div class="flex justify-end gap-3">
+                                <Link :href="`/dashboard/mikrotik/${node.id}/queue-tree`" class="text-primary/70 hover:text-primary" title="Queue tree">
+                                    <GitBranch :size="15" />
+                                </Link>
+                                <Link :href="`/dashboard/mikrotik/${node.id}/firewall`" class="text-primary/70 hover:text-primary" title="Firewall rules">
+                                    <Shield :size="15" />
+                                </Link>
+                                <Link :href="`/dashboard/mikrotik/${node.id}/pppoe-sessions`" class="text-primary/70 hover:text-primary" title="PPPoE sessions">
+                                    <Users :size="15" />
+                                </Link>
                                 <button @click="toggleStats(node)" class="text-primary/70 hover:text-primary" title="Dashboard stats">
                                     <ChevronUp v-if="expanded[node.id]" :size="15" />
                                     <ChevronDown v-else :size="15" />

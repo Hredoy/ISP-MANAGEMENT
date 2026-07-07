@@ -9,9 +9,11 @@ use App\Events\UserDisconnected;
 use App\Models\Client as ISPClient;
 use App\Models\Mikrotik;
 use App\Models\MikrotikActivityLog;
+use App\Models\MockMikrotikFirewallRule;
 use App\Models\MockMikrotikInterface;
 use App\Models\MockMikrotikProfile;
 use App\Models\MockMikrotikQueue;
+use App\Models\MockMikrotikQueueTree;
 use App\Models\MockMikrotikSession;
 use App\Models\MockMikrotikSystem;
 use App\Models\MockMikrotikUser;
@@ -306,6 +308,186 @@ class MockMikroTikService implements MikroTikServiceInterface
         return true;
     }
 
+    public function getQueueTree(): array
+    {
+        return $this->queueTrees()->orderBy('name')->get()->map(fn (MockMikrotikQueueTree $q) => $this->queueTreeRow($q))->all();
+    }
+
+    public function addQueueTree(array $data): array
+    {
+        $name = $data['name'] ?? null;
+
+        if (! $name) {
+            throw new InvalidArgumentException('Queue tree name is required.');
+        }
+
+        $tree = $this->queueTrees()->updateOrCreate(
+            ['mikrotik_id' => $this->mikrotik->id, 'name' => $name],
+            [
+                'parent' => $data['parent'] ?? 'global',
+                'packet_mark' => $data['packet_mark'] ?? null,
+                'max_limit' => $data['max_limit'] ?? '0/0',
+                'limit_at' => $data['limit_at'] ?? null,
+                'priority' => $data['priority'] ?? 8,
+                'disabled' => false,
+            ],
+        );
+
+        $this->logActivity('queue_tree.upserted', "Queue tree node '{$name}' saved.", ['name' => $name, 'parent' => $tree->parent]);
+
+        return $this->queueTreeRow($tree);
+    }
+
+    public function updateQueueTree(string $name, array $data): bool
+    {
+        $tree = $this->queueTrees()->where('name', $name)->first();
+
+        if (! $tree) {
+            return false;
+        }
+
+        $tree->update([
+            'parent' => $data['parent'] ?? $tree->parent,
+            'max_limit' => $data['max_limit'] ?? $tree->max_limit,
+            'limit_at' => $data['limit_at'] ?? $tree->limit_at,
+            'priority' => $data['priority'] ?? $tree->priority,
+            'disabled' => array_key_exists('disabled', $data) ? (bool) $data['disabled'] : $tree->disabled,
+        ]);
+
+        $this->logActivity('queue_tree.updated', "Queue tree node '{$name}' updated.", ['name' => $name]);
+
+        return true;
+    }
+
+    public function deleteQueueTree(string $name): bool
+    {
+        $tree = $this->queueTrees()->where('name', $name)->first();
+
+        if (! $tree) {
+            return false;
+        }
+
+        $tree->delete();
+        $this->logActivity('queue_tree.deleted', "Queue tree node '{$name}' deleted.", ['name' => $name]);
+
+        return true;
+    }
+
+    public function getFirewallRules(): array
+    {
+        return $this->firewallRules()->orderBy('position')->get()->map(fn (MockMikrotikFirewallRule $r) => $this->firewallRuleRow($r))->all();
+    }
+
+    public function addFirewallRule(array $data): array
+    {
+        if (empty($data['chain']) || empty($data['action'])) {
+            throw new InvalidArgumentException('Firewall rule requires a chain and action.');
+        }
+
+        $nextPosition = ($this->firewallRules()->max('position') ?? 0) + 1;
+
+        $rule = $this->firewallRules()->create([
+            'mikrotik_id' => $this->mikrotik->id,
+            'chain' => $data['chain'],
+            'action' => $data['action'],
+            'protocol' => $data['protocol'] ?? null,
+            'dst_port' => $data['dst_port'] ?? null,
+            'src_address' => $data['src_address'] ?? null,
+            'dst_address' => $data['dst_address'] ?? null,
+            'comment' => $data['comment'] ?? null,
+            'disabled' => false,
+            'position' => $nextPosition,
+        ]);
+
+        $this->logActivity('firewall.rule_added', "Firewall rule added to chain '{$data['chain']}'.", ['chain' => $data['chain'], 'action' => $data['action']]);
+
+        return $this->firewallRuleRow($rule);
+    }
+
+    public function updateFirewallRule(string $id, array $data): bool
+    {
+        $rule = $this->findFirewallRuleById($id);
+
+        if (! $rule) {
+            return false;
+        }
+
+        $rule->update([
+            'chain' => $data['chain'] ?? $rule->chain,
+            'action' => $data['action'] ?? $rule->action,
+            'protocol' => array_key_exists('protocol', $data) ? $data['protocol'] : $rule->protocol,
+            'dst_port' => array_key_exists('dst_port', $data) ? $data['dst_port'] : $rule->dst_port,
+            'src_address' => array_key_exists('src_address', $data) ? $data['src_address'] : $rule->src_address,
+            'dst_address' => array_key_exists('dst_address', $data) ? $data['dst_address'] : $rule->dst_address,
+            'comment' => array_key_exists('comment', $data) ? $data['comment'] : $rule->comment,
+            'disabled' => array_key_exists('disabled', $data) ? (bool) $data['disabled'] : $rule->disabled,
+        ]);
+
+        $this->logActivity('firewall.rule_updated', "Firewall rule '{$id}' updated.", ['id' => $id]);
+
+        return true;
+    }
+
+    public function deleteFirewallRule(string $id): bool
+    {
+        $rule = $this->findFirewallRuleById($id);
+
+        if (! $rule) {
+            return false;
+        }
+
+        $rule->delete();
+        $this->logActivity('firewall.rule_deleted', "Firewall rule '{$id}' deleted.", ['id' => $id]);
+
+        return true;
+    }
+
+    public function moveFirewallRule(string $id, string $direction): bool
+    {
+        $rules = $this->firewallRules()->orderBy('position')->get();
+        $index = $rules->search(fn (MockMikrotikFirewallRule $r) => "*{$r->id}" === $id);
+
+        if ($index === false) {
+            return false;
+        }
+
+        $neighbourIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+        if (! $rules->has($neighbourIndex)) {
+            return false;
+        }
+
+        $current = $rules[$index];
+        $neighbour = $rules[$neighbourIndex];
+        [$currentPosition, $neighbourPosition] = [$current->position, $neighbour->position];
+
+        $current->update(['position' => $neighbourPosition]);
+        $neighbour->update(['position' => $currentPosition]);
+
+        $this->logActivity('firewall.rule_moved', "Firewall rule '{$id}' moved {$direction}.", ['id' => $id, 'direction' => $direction]);
+
+        return true;
+    }
+
+    public function killActiveSessions(array $usernames): int
+    {
+        $killed = 0;
+
+        foreach ($usernames as $username) {
+            $session = $this->sessions()->where('username', $username)->first();
+
+            if ($session) {
+                $session->delete();
+                event(new UserDisconnected($this->mikrotik, $username));
+                $killed++;
+            }
+        }
+
+        $this->logActivity('ppp_sessions.bulk_disconnected', "Bulk disconnected {$killed} active PPPoE session(s).", ['usernames' => $usernames, 'killed' => $killed]);
+
+        return $killed;
+    }
+
     public function getHotspotUsers(): array
     {
         // No dedicated mock table for hotspot users - this app provisions PPPoE, not hotspot,
@@ -403,6 +585,21 @@ class MockMikroTikService implements MikroTikServiceInterface
         return MockMikrotikQueue::where('mikrotik_id', $this->mikrotik->id);
     }
 
+    private function queueTrees()
+    {
+        return MockMikrotikQueueTree::where('mikrotik_id', $this->mikrotik->id);
+    }
+
+    private function firewallRules()
+    {
+        return MockMikrotikFirewallRule::where('mikrotik_id', $this->mikrotik->id);
+    }
+
+    private function findFirewallRuleById(string $id): ?MockMikrotikFirewallRule
+    {
+        return $this->firewallRules()->where('id', ltrim($id, '*'))->first();
+    }
+
     private function sessions()
     {
         return MockMikrotikSession::where('mikrotik_id', $this->mikrotik->id);
@@ -457,6 +654,35 @@ class MockMikroTikService implements MikroTikServiceInterface
             'max-limit' => $queue->max_limit,
             'disabled' => $this->bool($queue->disabled),
             'bytes' => "{$queue->bytes_in}/{$queue->bytes_out}",
+        ];
+    }
+
+    private function queueTreeRow(MockMikrotikQueueTree $tree): array
+    {
+        return [
+            '.id' => "*{$tree->id}",
+            'name' => $tree->name,
+            'parent' => $tree->parent,
+            'packet-mark' => $tree->packet_mark,
+            'max-limit' => $tree->max_limit,
+            'limit-at' => $tree->limit_at,
+            'priority' => (string) $tree->priority,
+            'disabled' => $this->bool($tree->disabled),
+        ];
+    }
+
+    private function firewallRuleRow(MockMikrotikFirewallRule $rule): array
+    {
+        return [
+            '.id' => "*{$rule->id}",
+            'chain' => $rule->chain,
+            'action' => $rule->action,
+            'protocol' => $rule->protocol,
+            'dst-port' => $rule->dst_port,
+            'src-address' => $rule->src_address,
+            'dst-address' => $rule->dst_address,
+            'comment' => $rule->comment,
+            'disabled' => $this->bool($rule->disabled),
         ];
     }
 
