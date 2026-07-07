@@ -116,6 +116,68 @@ interface MikroTikServiceInterface
     public function deleteQueue(string $name): bool;
 
     /**
+     * Raw /queue/tree/print rows - hierarchical queues (parent/child), distinct from the flat
+     * /queue/simple rows returned by getQueues().
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getQueueTree(): array;
+
+    /**
+     * Idempotent upsert-by-name, mirroring addSimpleQueue()'s retry-safety.
+     *
+     * @param  array{name: string, parent?: string, packet_mark?: string, max_limit?: string, limit_at?: string, priority?: int}  $data
+     * @return array<string, mixed>
+     */
+    public function addQueueTree(array $data): array;
+
+    /**
+     * @param  array{parent?: string, max_limit?: string, limit_at?: string, priority?: int, disabled?: bool}  $data
+     */
+    public function updateQueueTree(string $name, array $data): bool;
+
+    public function deleteQueueTree(string $name): bool;
+
+    /**
+     * Raw /ip/firewall/filter/print rows, in the router's current rule order (order matters for
+     * firewall evaluation).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getFirewallRules(): array;
+
+    /**
+     * @param  array{chain: string, action: string, protocol?: string, dst_port?: string, src_address?: string, dst_address?: string, comment?: string}  $data
+     * @return array<string, mixed>
+     */
+    public function addFirewallRule(array $data): array;
+
+    /**
+     * @param  string  $id  The rule's RouterOS `.id` (or the mock service's equivalent synthetic id)
+     * @param  array{chain?: string, action?: string, protocol?: string, dst_port?: string, src_address?: string, dst_address?: string, comment?: string, disabled?: bool}  $data
+     */
+    public function updateFirewallRule(string $id, array $data): bool;
+
+    public function deleteFirewallRule(string $id): bool;
+
+    /**
+     * Swaps the rule with its immediate neighbour in the given direction - order matters for
+     * firewall evaluation, so this is a swap, not an arbitrary reposition.
+     *
+     * @param  'up'|'down'  $direction
+     */
+    public function moveFirewallRule(string $id, string $direction): bool;
+
+    /**
+     * Bulk-kills active PPP sessions (e.g. from a multi-select in the admin panel) without
+     * touching the underlying secrets' disabled flag.
+     *
+     * @param  list<string>  $usernames
+     * @return int Number of sessions actually found and killed.
+     */
+    public function killActiveSessions(array $usernames): int;
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function getHotspotUsers(): array;

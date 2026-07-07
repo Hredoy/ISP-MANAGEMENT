@@ -1,12 +1,15 @@
 <?php
 
-use App\Http\Controllers\API\ChatbotController;
 use App\Http\Controllers\API\BillingController;
+use App\Http\Controllers\API\ChatbotController;
 use App\Http\Controllers\API\ClientController;
 use App\Http\Controllers\API\ClientProvisioningController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\IntegrationController;
 use App\Http\Controllers\API\Mikrotik\MikrotikController;
+use App\Http\Controllers\API\Mikrotik\MikrotikFirewallController;
+use App\Http\Controllers\API\Mikrotik\MikrotikPppoeSessionController;
+use App\Http\Controllers\API\Mikrotik\MikrotikQueueTreeController;
 use App\Http\Controllers\API\OltController;
 use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\PaymentSmsMatchController;
@@ -135,6 +138,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             // Real-time monitoring of a specific router
             Route::get('/{mikrotik}/stats', [MikrotikController::class, 'getLiveStats'])->name('mikrotik.stats');
+
+            // Queue Tree visual editor (hierarchical parent/child bandwidth queues)
+            Route::get('/{mikrotik}/queue-tree', [MikrotikQueueTreeController::class, 'index'])->name('queue-tree.index');
+            Route::post('/{mikrotik}/queue-tree', [MikrotikQueueTreeController::class, 'store'])->name('queue-tree.store');
+            Route::put('/{mikrotik}/queue-tree/{name}', [MikrotikQueueTreeController::class, 'update'])->name('queue-tree.update');
+            Route::delete('/{mikrotik}/queue-tree/{name}', [MikrotikQueueTreeController::class, 'destroy'])->name('queue-tree.destroy');
+
+            // Firewall rule management (no Winbox needed)
+            Route::get('/{mikrotik}/firewall', [MikrotikFirewallController::class, 'index'])->name('firewall.index');
+            Route::post('/{mikrotik}/firewall', [MikrotikFirewallController::class, 'store'])->name('firewall.store');
+            Route::put('/{mikrotik}/firewall/{rule}', [MikrotikFirewallController::class, 'update'])->name('firewall.update');
+            Route::delete('/{mikrotik}/firewall/{rule}', [MikrotikFirewallController::class, 'destroy'])->name('firewall.destroy');
+            Route::post('/{mikrotik}/firewall/{rule}/move', [MikrotikFirewallController::class, 'move'])->name('firewall.move');
+
+            // PPPoE mass session management
+            Route::get('/{mikrotik}/pppoe-sessions', [MikrotikPppoeSessionController::class, 'index'])->name('pppoe-sessions.index');
+            Route::delete('/{mikrotik}/pppoe-sessions/{username}', [MikrotikPppoeSessionController::class, 'destroy'])->name('pppoe-sessions.destroy');
+            Route::post('/{mikrotik}/pppoe-sessions/bulk-kill', [MikrotikPppoeSessionController::class, 'bulkDestroy'])->name('pppoe-sessions.bulk-kill');
         });
 
         // --- OLT DEVICE MANAGEMENT ---

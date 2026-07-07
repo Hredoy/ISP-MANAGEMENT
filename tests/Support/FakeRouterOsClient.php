@@ -55,6 +55,7 @@ class FakeRouterOsClient extends Client
             'add' => $this->handleAdd($table, $attrs),
             'set' => $this->handleSet($table, $attrs),
             'remove' => $this->handleRemove($table, $attrs),
+            'move' => $this->handleMove($table, $attrs),
             default => [],
         };
     }
@@ -140,6 +141,51 @@ class FakeRouterOsClient extends Client
             $this->tables[$table] ?? [],
             fn (array $row) => ($row['.id'] ?? null) !== $id,
         ));
+
+        return [];
+    }
+
+    /**
+     * Mirrors RouterOS's `/move numbers=X destination=Y`: relocates row X to sit immediately
+     * before row Y (or appends to the end when `destination` is omitted).
+     */
+    private function handleMove(string $table, array $attrs): array
+    {
+        $id = $attrs['equal']['numbers'] ?? null;
+        $destination = $attrs['equal']['destination'] ?? null;
+        $rows = $this->tables[$table] ?? [];
+
+        $index = null;
+        foreach ($rows as $i => $row) {
+            if (($row['.id'] ?? null) === $id) {
+                $index = $i;
+                break;
+            }
+        }
+
+        if ($index === null) {
+            return [];
+        }
+
+        [$item] = array_splice($rows, $index, 1);
+
+        $destIndex = null;
+        if ($destination !== null) {
+            foreach ($rows as $i => $row) {
+                if (($row['.id'] ?? null) === $destination) {
+                    $destIndex = $i;
+                    break;
+                }
+            }
+        }
+
+        if ($destIndex === null) {
+            $rows[] = $item;
+        } else {
+            array_splice($rows, $destIndex, 0, [$item]);
+        }
+
+        $this->tables[$table] = $rows;
 
         return [];
     }

@@ -379,6 +379,212 @@ class RealMikroTikService implements MikroTikServiceInterface
         return true;
     }
 
+    public function getQueueTree(): array
+    {
+        return $this->read('/queue/tree/print');
+    }
+
+    public function addQueueTree(array $data): array
+    {
+        $name = $data['name'] ?? null;
+
+        if (! $name) {
+            throw new InvalidArgumentException('Queue tree name is required.');
+        }
+
+        $client = $this->getClient();
+        $existing = $this->findQueueTreeByName($name);
+
+        $query = $existing
+            ? (new Query('/queue/tree/set'))->equal('.id', $existing['.id'])
+            : (new Query('/queue/tree/add'))->equal('name', $name);
+
+        $query->equal('parent', (string) ($data['parent'] ?? 'global'));
+        $query->equal('max-limit', (string) ($data['max_limit'] ?? '0/0'));
+
+        foreach (['packet_mark' => 'packet-mark', 'limit_at' => 'limit-at', 'priority' => 'priority'] as $field => $wireKey) {
+            if (isset($data[$field])) {
+                $query->equal($wireKey, (string) $data[$field]);
+            }
+        }
+
+        $result = $this->write($client, $query);
+        $this->logActivity('queue_tree.upserted', "Queue tree node '{$name}' saved.", ['name' => $name, 'parent' => $data['parent'] ?? 'global']);
+
+        return $result;
+    }
+
+    public function updateQueueTree(string $name, array $data): bool
+    {
+        $client = $this->getClient();
+        $target = $this->findQueueTreeByName($name);
+
+        if (! $target) {
+            return false;
+        }
+
+        $query = (new Query('/queue/tree/set'))->equal('.id', $target['.id']);
+
+        foreach (['parent' => 'parent', 'max_limit' => 'max-limit', 'limit_at' => 'limit-at', 'priority' => 'priority'] as $field => $wireKey) {
+            if (isset($data[$field])) {
+                $query->equal($wireKey, (string) $data[$field]);
+            }
+        }
+
+        if (array_key_exists('disabled', $data)) {
+            $query->equal('disabled', $data['disabled'] ? 'yes' : 'no');
+        }
+
+        $this->write($client, $query);
+        $this->logActivity('queue_tree.updated', "Queue tree node '{$name}' updated.", ['name' => $name]);
+
+        return true;
+    }
+
+    public function deleteQueueTree(string $name): bool
+    {
+        $client = $this->getClient();
+        $target = $this->findQueueTreeByName($name);
+
+        if (! $target) {
+            return false;
+        }
+
+        $this->write($client, (new Query('/queue/tree/remove'))->equal('numbers', $target['.id']));
+        $this->logActivity('queue_tree.deleted', "Queue tree node '{$name}' deleted.", ['name' => $name]);
+
+        return true;
+    }
+
+    public function getFirewallRules(): array
+    {
+        return $this->read('/ip/firewall/filter/print');
+    }
+
+    public function addFirewallRule(array $data): array
+    {
+        if (empty($data['chain']) || empty($data['action'])) {
+            throw new InvalidArgumentException('Firewall rule requires a chain and action.');
+        }
+
+        $client = $this->getClient();
+
+        $query = (new Query('/ip/firewall/filter/add'))
+            ->equal('chain', (string) $data['chain'])
+            ->equal('action', (string) $data['action']);
+
+        foreach (['protocol', 'dst_port', 'src_address', 'dst_address', 'comment'] as $field) {
+            if (! empty($data[$field])) {
+                $query->equal(str_replace('_', '-', $field), (string) $data[$field]);
+            }
+        }
+
+        $result = $this->write($client, $query);
+        $this->logActivity('firewall.rule_added', "Firewall rule added to chain '{$data['chain']}'.", ['chain' => $data['chain'], 'action' => $data['action']]);
+
+        return $result;
+    }
+
+    public function updateFirewallRule(string $id, array $data): bool
+    {
+        if (! $this->findFirewallRuleById($id)) {
+            return false;
+        }
+
+        $client = $this->getClient();
+
+        $query = (new Query('/ip/firewall/filter/set'))->equal('.id', $id);
+
+        foreach (['chain', 'action', 'protocol', 'dst_port', 'src_address', 'dst_address', 'comment'] as $field) {
+            if (array_key_exists($field, $data) && $data[$field] !== null) {
+                $query->equal(str_replace('_', '-', $field), (string) $data[$field]);
+            }
+        }
+
+        if (array_key_exists('disabled', $data)) {
+            $query->equal('disabled', $data['disabled'] ? 'yes' : 'no');
+        }
+
+        $this->write($client, $query);
+        $this->logActivity('firewall.rule_updated', "Firewall rule '{$id}' updated.", ['id' => $id]);
+
+        return true;
+    }
+
+    public function deleteFirewallRule(string $id): bool
+    {
+        $client = $this->getClient();
+
+        $this->write($client, (new Query('/ip/firewall/filter/remove'))->equal('numbers', $id));
+        $this->logActivity('firewall.rule_deleted', "Firewall rule '{$id}' deleted.", ['id' => $id]);
+
+        return true;
+    }
+
+    public function moveFirewallRule(string $id, string $direction): bool
+    {
+        $rules = $this->getFirewallRules();
+        $index = null;
+
+        foreach ($rules as $i => $rule) {
+            if (($rule['.id'] ?? null) === $id) {
+                $index = $i;
+                break;
+            }
+        }
+
+        if ($index === null) {
+            return false;
+        }
+
+        $neighbourIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+        if (! isset($rules[$neighbourIndex])) {
+            return false;
+        }
+
+        $client = $this->getClient();
+
+        // RouterOS's /move places `numbers` immediately before `destination` - moving up means
+        // landing right before our upward neighbour; moving down means landing right before
+        // whatever currently sits two slots away (i.e. after our downward neighbour). Omitting
+        // `destination` when there's nothing past that point appends to the end of the list.
+        $destination = $direction === 'up'
+            ? $rules[$neighbourIndex]['.id']
+            : ($rules[$neighbourIndex + 1]['.id'] ?? null);
+
+        $query = (new Query('/ip/firewall/filter/move'))->equal('numbers', $id);
+
+        if ($destination !== null) {
+            $query->equal('destination', $destination);
+        }
+
+        $this->write($client, $query);
+        $this->logActivity('firewall.rule_moved', "Firewall rule '{$id}' moved {$direction}.", ['id' => $id, 'direction' => $direction]);
+
+        return true;
+    }
+
+    public function killActiveSessions(array $usernames): int
+    {
+        $killed = 0;
+
+        foreach ($usernames as $username) {
+            $sessions = $this->read('/ppp/active/print', (new Query('/ppp/active/print'))
+                ->equal('.proplist', '.id,name')
+                ->equal('name', $username));
+
+            if ($sessions !== []) {
+                $this->disconnectActiveSession($username);
+                $killed++;
+            }
+        }
+
+        $this->logActivity('ppp_sessions.bulk_disconnected', "Bulk disconnected {$killed} active PPPoE session(s).", ['usernames' => $usernames, 'killed' => $killed]);
+
+        return $killed;
+    }
+
     public function getHotspotUsers(): array
     {
         return $this->read('/ip/hotspot/user/print');
@@ -541,5 +747,21 @@ class RealMikroTikService implements MikroTikServiceInterface
             ->equal('.proplist', 'name,.id'));
 
         return collect($profiles)->firstWhere('name', $name);
+    }
+
+    private function findQueueTreeByName(string $name): ?array
+    {
+        $rows = $this->read('/queue/tree/print', (new Query('/queue/tree/print'))
+            ->equal('.proplist', '.id,name')
+            ->equal('name', $name));
+
+        return $rows[0] ?? null;
+    }
+
+    private function findFirewallRuleById(string $id): ?array
+    {
+        $rows = $this->read('/ip/firewall/filter/print', (new Query('/ip/firewall/filter/print'))->equal('.id', $id));
+
+        return $rows[0] ?? null;
     }
 }
