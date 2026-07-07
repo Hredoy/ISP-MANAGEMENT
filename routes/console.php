@@ -24,3 +24,8 @@ Schedule::command('tenants:run tickets:escalate-overdue')->hourly()->withoutOver
 // Polls every MikroTik router's status/CPU (Redis-cached, DB written only on change) and
 // raises a fault if CPU stays over 90% for 5+ minutes. See App\Services\DevicePollingService.
 Schedule::command('tenants:run devices:poll')->everyThirtySeconds()->withoutOverlapping();
+
+// Retries DNS/Certbot/Nginx for any tenant custom domain still pending - a landlord/central
+// concern (not per-tenant data), so this is NOT wrapped in `tenants:run`.
+// See App\Services\DomainProvisioningService::provisionCustomDomainSsl().
+Schedule::command('domains:poll-custom-ssl')->everyFiveMinutes()->withoutOverlapping();

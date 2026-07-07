@@ -44,6 +44,7 @@ const updateStatus = (tenant, status) => {
             <h4 class="text-lg font-black text-gray-950">{{ tenant.organization_name || tenant.id }}</h4>
             <p class="text-sm text-gray-500">{{ tenant.admin_email }} · {{ tenant.status }}</p>
             <p class="mt-1 text-xs text-gray-500">DB {{ tenant.database_name || '-' }}: {{ tenant.database_status }} · Domain: {{ tenant.domain_status }}</p>
+            <p v-if="tenant.ssl_status && tenant.ssl_status !== 'not_applicable'" class="mt-1 text-xs text-gray-500">Custom domain SSL: {{ tenant.ssl_status }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button class="rounded border px-3 py-2 text-sm font-semibold" @click="updateStatus(tenant, 'active')">Activate</button>

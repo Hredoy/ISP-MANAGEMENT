@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
@@ -14,9 +14,22 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     use HasDomains;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_INACTIVE = 'inactive';
+
     public const STATUS_SUSPENDED = 'suspended';
+
     public const STATUS_PENDING_SETUP = 'pending_setup';
+
+    public const SSL_NOT_APPLICABLE = 'not_applicable';
+
+    public const SSL_PENDING_DNS = 'pending_dns';
+
+    public const SSL_ISSUING = 'issuing';
+
+    public const SSL_ACTIVE = 'active';
+
+    public const SSL_FAILED = 'failed';
 
     public static function getCustomColumns(): array
     {
@@ -29,6 +42,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'database_name',
             'database_status',
             'domain_status',
+            'ssl_status',
+            'ssl_last_checked_at',
+            'ssl_issued_at',
             'suspended_message',
         ];
     }
@@ -64,5 +80,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function isSuspended(): bool
     {
         return $this->status === self::STATUS_SUSPENDED;
+    }
+
+    /**
+     * The tenant's custom domain, if any - i.e. whichever of its domains is not the free
+     * {slug}.LANDLORD_DOMAIN subdomain (which never needs DNS/SSL provisioning).
+     */
+    public function customDomainName(): ?string
+    {
+        $platformDomain = env('LANDLORD_DOMAIN', 'yourplatform.com');
+
+        return $this->domains
+            ->pluck('domain')
+            ->first(fn (string $domain) => ! str_ends_with($domain, '.'.$platformDomain));
     }
 }

@@ -14,12 +14,12 @@ use App\Models\TenantPackage;
 use App\Models\TenantProvisioningLog;
 use App\Models\TenantSetting;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Database\QueryException;
 
 class TenantProvisioningService
 {
@@ -158,6 +158,11 @@ class TenantProvisioningService
                 $domainProvisioningFailed ? 'Tenant domains were saved, but DNS/hosts automation needs attention.' : 'Tenant domain records are ready.',
                 $domainProvisioningResult
             );
+
+            if ($customDomain) {
+                $sslResult = $this->domainProvisioningService->provisionCustomDomainSsl($tenant->fresh(), $customDomain);
+                $this->logStep($application, $tenant, 'custom_domain_ssl', $sslResult['status'], $sslResult['message'], $sslResult);
+            }
 
             $this->runTenantMigrations($databaseName);
             $tenant->update(['database_status' => 'migrated']);
