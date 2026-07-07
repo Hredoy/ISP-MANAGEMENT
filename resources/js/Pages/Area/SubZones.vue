@@ -1,7 +1,7 @@
 <script setup>
 import ISPLayout from '@/Layouts/ISPLayout.vue';
-import { useForm } from '@inertiajs/vue3';
-import { Trash2, MapPin, Plus } from 'lucide-vue-next';
+import { router, useForm } from '@inertiajs/vue3';
+import { Trash2, MapPin, Pencil } from 'lucide-vue-next';
 
 defineOptions({ layout: ISPLayout });
 const props = defineProps({ subZones: Array, zones: Array });
@@ -10,6 +10,16 @@ const form = useForm({ name: '', zone_id: '', manager_contact: '' });
 
 const submit = () => {
     form.post('/dashboard/sub-zones', { onSuccess: () => form.reset() });
+};
+
+const rename = (subZone) => {
+    const name = prompt('Sub-zone name', subZone.name);
+    if (!name || name === subZone.name) return;
+    router.put(`/dashboard/sub-zones/${subZone.id}`, {
+        name,
+        zone_id: subZone.zone_id,
+        manager_contact: subZone.manager_contact,
+    });
 };
 </script>
 
@@ -34,7 +44,10 @@ const submit = () => {
                         <td class="p-4 uppercase">{{ subZone.name }}</td>
                         <td class="p-4 uppercase">{{ subZone.zone.name }}</td>
                         <td class="p-4 text-center">{{ subZone.manager_contact }}</td>
-                        <td class="p-4 text-right">
+                        <td class="p-4 text-right space-x-3">
+                            <button @click="rename(subZone)" class="text-primary hover:scale-110">
+                                <Pencil :size="14" />
+                            </button>
                             <button @click="$inertia.delete(`/dashboard/sub-zones/${subZone.id}`)" class="text-red-500 hover:scale-110">
                                 <Trash2 :size="14" />
                             </button>

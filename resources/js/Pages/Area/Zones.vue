@@ -1,7 +1,7 @@
 <script setup>
 import ISPLayout from '@/Layouts/ISPLayout.vue';
-import { useForm } from '@inertiajs/vue3';
-import { Trash2, MapPin, Plus } from 'lucide-vue-next';
+import { router, useForm } from '@inertiajs/vue3';
+import { Trash2, MapPin, Pencil } from 'lucide-vue-next';
 
 defineOptions({ layout: ISPLayout });
 const props = defineProps({ zones: Array });
@@ -10,6 +10,12 @@ const form = useForm({ name: '', code: '' });
 
 const submit = () => {
     form.post('/dashboard/zones', { onSuccess: () => form.reset() });
+};
+
+const rename = (zone) => {
+    const name = prompt('Zone name', zone.name);
+    if (!name || name === zone.name) return;
+    router.put(`/dashboard/zones/${zone.id}`, { name, code: zone.code });
 };
 </script>
 
@@ -26,6 +32,7 @@ const submit = () => {
                         <th class="p-4">CODE</th>
                         <th class="p-4">ZONE_NAME</th>
                         <th class="p-4 text-center">SUB_ZONES</th>
+                        <th class="p-4 text-center">CLIENTS</th>
                         <th class="p-4 text-right">ACTION</th>
                     </tr>
                     </thead>
@@ -34,7 +41,11 @@ const submit = () => {
                         <td class="p-4 text-primary font-bold">{{ zone.code || 'N/A' }}</td>
                         <td class="p-4 uppercase">{{ zone.name }}</td>
                         <td class="p-4 text-center">{{ zone.sub_zones_count }}</td>
-                        <td class="p-4 text-right">
+                        <td class="p-4 text-center">{{ zone.clients_count }}</td>
+                        <td class="p-4 text-right space-x-3">
+                            <button @click="rename(zone)" class="text-primary hover:scale-110">
+                                <Pencil :size="14" />
+                            </button>
                             <button @click="$inertia.delete(`/dashboard/zones/${zone.id}`)" class="text-red-500 hover:scale-110">
                                 <Trash2 :size="14" />
                             </button>

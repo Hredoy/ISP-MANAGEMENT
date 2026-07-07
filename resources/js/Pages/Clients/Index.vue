@@ -2,7 +2,7 @@
 import { computed, h, ref, watch } from 'vue';
 import ISPLayout from '@/Layouts/ISPLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Users, Search, UserPlus, Trash2, Edit3, PauseCircle, PlayCircle, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { Users, Search, UserPlus, UploadCloud, Trash2, Edit3, PauseCircle, PlayCircle, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { createToaster } from '@meforma/vue-toaster';
 import { FlexRender, createColumnHelper, getCoreRowModel, useVueTable } from '@tanstack/vue-table';
 import { useVirtualizer } from '@tanstack/vue-virtual';
@@ -179,9 +179,14 @@ const sortableColumns = { full_name: 'Client_Info', pppoe_username: 'Credentials
                 <p class="text-[9px] opacity-50">AUTHORIZED_ACCESS_ONLY // TOTAL_NODES: {{ clients.total }}</p>
             </div>
 
-            <Link :href="route('dashboard.clients.create')" class="bg-primary text-black px-6 py-2 text-[10px] font-black uppercase hover:bg-white transition flex items-center gap-2">
-                <UserPlus :size="14" /> ADD_CLIENT
-            </Link>
+            <div class="flex gap-3">
+                <Link :href="route('dashboard.clients.import.create')" class="border border-primary/40 text-primary px-6 py-2 text-[10px] font-black uppercase hover:bg-primary/10 transition flex items-center gap-2">
+                    <UploadCloud :size="14" /> BULK_IMPORT
+                </Link>
+                <Link :href="route('dashboard.clients.create')" class="bg-primary text-black px-6 py-2 text-[10px] font-black uppercase hover:bg-white transition flex items-center gap-2">
+                    <UserPlus :size="14" /> ADD_CLIENT
+                </Link>
+            </div>
         </div>
 
         <div class="flex flex-col md:flex-row gap-4">
