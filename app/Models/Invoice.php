@@ -5,20 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Payment extends Model
+class Invoice extends Model
 {
     use HasUuids, SoftDeletes;
 
     protected $guarded = [];
 
     protected $casts = [
-        'amount' => 'decimal:2',
-        'billing_period' => 'date',
-        'paid_at' => 'datetime',
+        'subtotal' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'total' => 'decimal:2',
+        'issued_at' => 'datetime',
+        'due_at' => 'datetime',
         'meta' => 'array',
     ];
 
@@ -27,13 +27,8 @@ class Payment extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function transactions(): HasMany
+    public function payment(): BelongsTo
     {
-        return $this->hasMany(PaymentTransaction::class);
-    }
-
-    public function invoice(): HasOne
-    {
-        return $this->hasOne(Invoice::class);
+        return $this->belongsTo(Payment::class);
     }
 }
