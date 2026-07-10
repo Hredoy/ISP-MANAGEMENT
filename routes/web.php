@@ -201,6 +201,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('billing')->name('billing.')->middleware('tenant.module:billing')->group(function () {
             Route::get('/', [BillingController::class, 'index'])->name('index');
             Route::post('payments', [BillingController::class, 'storePayment'])->name('payments.store');
+
+            // Invoices
+            Route::get('invoices', [BillingController::class, 'invoices'])->name('invoices.index');
+            Route::get('invoices/{invoice}/download', [BillingController::class, 'downloadInvoice'])->name('invoices.download');
+            Route::post('invoices/{invoice}/regenerate', [BillingController::class, 'regenerateInvoicePdf'])->name('invoices.regenerate');
+
+            // Credit wallet
+            Route::post('credit/adjust', [BillingController::class, 'adjustCredit'])->name('credit.adjust');
+            Route::get('credit/{client}/history', [BillingController::class, 'creditHistory'])->name('credit.history');
         });
 
         // --- SUPPORT TICKETS ---

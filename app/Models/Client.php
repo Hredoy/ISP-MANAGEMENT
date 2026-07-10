@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
@@ -18,6 +19,7 @@ class Client extends Model
 
     protected $casts = [
         'monthly_bill' => 'decimal:2',
+        'credit_balance' => 'decimal:2',
     ];
 
     public function zone(): BelongsTo
@@ -38,6 +40,21 @@ class Client extends Model
     public function olt(): BelongsTo
     {
         return $this->belongsTo(Olt::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(CreditTransaction::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
