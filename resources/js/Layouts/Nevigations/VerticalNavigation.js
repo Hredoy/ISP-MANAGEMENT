@@ -18,6 +18,7 @@ import {
     ShieldCheck,
     Bot,
     Ticket,
+    Share2,
 } from 'lucide-vue-next';
 export const navItems = [
     { name: 'DASHBOARD', href: '/dashboard', icon: LayoutDashboard, component: 'Dashboard' },
@@ -79,6 +80,15 @@ export const navItems = [
         permission: 'role_permissions.view',
     },
     { name: 'FRONTEND', href: '/dashboard/frontend', icon: MonitorCog, component: 'Tenant/FrontendAdmin', module: 'settings' },
+    {
+        name: 'RESELLERS',
+        icon: Share2,
+        children: [
+            { name: 'RESELLER_LIST', href: '/dashboard/resellers', icon: List, component: 'Reseller/Index' },
+            { name: 'ADD_RESELLER', href: '/dashboard/resellers/create', icon: UserPlus, component: 'Reseller/Create' },
+            { name: 'MY_DASHBOARD', href: '/dashboard/resellers/my-dashboard', icon: LayoutDashboard, component: 'Reseller/Dashboard' },
+        ]
+    },
     { name: 'BILLING', href: '/dashboard/billing', icon: CreditCard, component: 'Billing/Index', module: 'billing' },
     { name: 'SETTINGS', href: '/dashboard/settings', icon: Settings, component: 'Settings/Index', module: 'settings' },
 ];

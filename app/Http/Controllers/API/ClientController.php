@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Mikrotik;
 use App\Models\Olt;
 use App\Models\Package;
+use App\Models\Reseller;
 use App\Models\SubZone;
 use App\Models\Zone;
 use App\Services\MikroTik\MikroTikServiceFactory;
@@ -54,11 +55,12 @@ class ClientController extends Controller
     public function create(): Response
     {
         return Inertia::render('Clients/Create', [
-            'routers' => Mikrotik::all(['id', 'name']),
-            'zones' => Zone::all(['id', 'name']),
-            'subZones' => SubZone::all(['id', 'name', 'zone_id']),
-            'packages' => Package::orderBy('name')->get(['name', 'price', 'mikrotik_id']),
-            'olts' => Olt::where('is_active', true)->get(['id', 'name', 'vendor']),
+            'routers'   => Mikrotik::all(['id', 'name']),
+            'zones'     => Zone::all(['id', 'name']),
+            'subZones'  => SubZone::all(['id', 'name', 'zone_id']),
+            'packages'  => Package::orderBy('name')->get(['name', 'price', 'mikrotik_id']),
+            'olts'      => Olt::where('is_active', true)->get(['id', 'name', 'vendor']),
+            'resellers' => Reseller::where('status', 'active')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -88,11 +90,12 @@ class ClientController extends Controller
     public function edit(Client $client): Response
     {
         return Inertia::render('Clients/Edit', [
-            'client' => $client,
-            'routers' => Mikrotik::all(['id', 'name']),
-            'zones' => Zone::all(['id', 'name']),
-            'subZones' => SubZone::all(['id', 'name', 'zone_id']),
-            'packages' => Package::orderBy('name')->get(['name', 'price', 'mikrotik_id']),
+            'client'    => $client,
+            'routers'   => Mikrotik::all(['id', 'name']),
+            'zones'     => Zone::all(['id', 'name']),
+            'subZones'  => SubZone::all(['id', 'name', 'zone_id']),
+            'packages'  => Package::orderBy('name')->get(['name', 'price', 'mikrotik_id']),
+            'resellers' => Reseller::where('status', 'active')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -102,6 +105,7 @@ class ClientController extends Controller
             'mikrotik_id' => 'required|exists:mikrotiks,id',
             'zone_id' => 'nullable|exists:zones,id',
             'sub_zone_id' => 'nullable|exists:sub_zones,id',
+            'reseller_id' => 'nullable|uuid|exists:resellers,id',
             'package_name' => 'required|string',
             'pppoe_username' => 'required|string|unique:clients,pppoe_username,'.$client->id,
             'pppoe_password' => 'required|string|min:6',

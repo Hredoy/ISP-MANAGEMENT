@@ -40,6 +40,11 @@ class Client extends Model
         return $this->belongsTo(Olt::class);
     }
 
+    public function reseller(): BelongsTo
+    {
+        return $this->belongsTo(Reseller::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         if (! $term) {
