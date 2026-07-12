@@ -13,6 +13,7 @@ const props = defineProps({
     subZones: Array,
     packages: Array, // [{ name, price, mikrotik_id }]
     olts: { type: Array, default: () => [] },
+    resellers: { type: Array, default: () => [] },
 });
 
 const toaster = createToaster();
@@ -42,6 +43,7 @@ const form = reactive({
     onu_mac: '',
     onu_serial: '',
     pon_port: '',
+    reseller_id: '',
 });
 
 const availablePackages = computed(() => {
@@ -208,6 +210,13 @@ const submit = async () => {
                         <select v-model="form.sub_zone_id" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
                             <option value="">-- Select Sub Zone --</option>
                             <option v-for="sz in subZones" :key="sz.id" :value="sz.id">{{ sz.name }}</option>
+                        </select>
+                    </div>
+                    <div v-if="resellers.length" class="space-y-1">
+                        <label class="text-[9px] uppercase font-bold opacity-70">Reseller (Optional)</label>
+                        <select v-model="form.reseller_id" class="w-full bg-surface border border-primary/30 p-2 text-xs focus:border-primary outline-none">
+                            <option value="">-- Direct (No Reseller) --</option>
+                            <option v-for="r in resellers" :key="r.id" :value="r.id">{{ r.name }}</option>
                         </select>
                     </div>
                 </div>

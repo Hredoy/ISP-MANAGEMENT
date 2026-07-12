@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\BillingController;
+use App\Http\Controllers\API\ResellerController;
 use App\Http\Controllers\API\ChatbotController;
 use App\Http\Controllers\API\ClientController;
 use App\Http\Controllers\API\ClientImportController;
@@ -202,6 +203,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/', [BillingController::class, 'index'])->name('index');
             Route::post('payments', [BillingController::class, 'storePayment'])->name('payments.store');
         });
+
+        // --- RESELLER MANAGEMENT ---
+        Route::prefix('resellers')->name('resellers.')->group(function () {
+            Route::get('/', [ResellerController::class, 'index'])->name('index');
+            Route::get('/create', [ResellerController::class, 'create'])->name('create');
+            Route::post('/', [ResellerController::class, 'store'])->name('store');
+            Route::get('/my-dashboard', [ResellerController::class, 'dashboard'])->name('dashboard');
+            Route::get('/{reseller}', [ResellerController::class, 'show'])->name('show');
+            Route::get('/{reseller}/edit', [ResellerController::class, 'edit'])->name('edit');
+            Route::patch('/{reseller}', [ResellerController::class, 'update'])->name('update');
+            Route::delete('/{reseller}', [ResellerController::class, 'destroy'])->name('destroy');
+            Route::post('/{reseller}/commissions/{commission}/pay', [ResellerController::class, 'markCommissionPaid'])->name('commissions.pay');
+        });
+        // --- RESELLER MANAGEMENT ---
 
         // --- SUPPORT TICKETS ---
         Route::prefix('tickets')->name('tickets.')->group(function () {

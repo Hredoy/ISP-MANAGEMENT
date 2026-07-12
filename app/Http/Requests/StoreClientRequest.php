@@ -21,6 +21,7 @@ class StoreClientRequest extends FormRequest
             'onu_mac' => 'nullable|string|max:255',
             'onu_serial' => 'nullable|string|max:255',
             'pon_port' => 'nullable|string|max:255',
+            'reseller_id' => 'nullable|uuid|exists:resellers,id',
             'pppoe_username' => 'required|string|unique:clients,pppoe_username',
             'pppoe_password' => 'required|string|min:6',
             'package_name' => 'required|string',

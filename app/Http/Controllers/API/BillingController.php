@@ -5,6 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Payment;
+use App\Models\Reseller;
+use App\Models\ResellerCommission;
 use App\Models\Setting;
 use App\Support\TenantCache;
 use Carbon\Carbon;
@@ -57,10 +59,10 @@ class BillingController extends Controller
         ]);
 
         DB::transaction(function () use ($data) {
-            $client = Client::lockForUpdate()->findOrFail($data['client_id']);
+            $client = Client::with('reseller')->lockForUpdate()->findOrFail($data['client_id']);
             $paidAt = isset($data['paid_at']) ? Carbon::parse($data['paid_at']) : now();
 
-            Payment::create([
+            $payment = Payment::create([
                 'client_id' => $client->id,
                 'amount' => $data['amount'],
                 'method' => $data['method'],
@@ -69,6 +71,10 @@ class BillingController extends Controller
                 'paid_at' => $data['status'] === 'completed' ? $paidAt : null,
                 'meta' => ['note' => $data['note'] ?? null],
             ]);
+
+            if ($data['status'] === 'completed' && $client->reseller_id) {
+                $this->creditCommissions($client, $payment);
+            }
 
             if ($data['status'] === 'completed' && (int) ($data['extend_days'] ?? 0) > 0) {
                 $baseDate = $client->expiry_date && Carbon::parse($client->expiry_date)->isFuture()
@@ -86,5 +92,32 @@ class BillingController extends Controller
         TenantCache::forgetDashboardAndClients();
 
         return back()->with('message', 'PAYMENT_RECORDED');
+    }
+
+    /** Walk the reseller tree and create a commission record at each level. */
+    private function creditCommissions(Client $client, Payment $payment): void
+    {
+        $reseller = $client->reseller;
+
+        while ($reseller) {
+            if ((float) $reseller->commission_rate <= 0) {
+                $reseller = $reseller->parent;
+                continue;
+            }
+
+            $amount = round((float) $payment->amount * (float) $reseller->commission_rate / 100, 2);
+
+            ResellerCommission::create([
+                'reseller_id' => $reseller->id,
+                'client_id'   => $client->id,
+                'payment_id'  => $payment->id,
+                'amount'      => $amount,
+                'status'      => 'pending',
+            ]);
+
+            $reseller->increment('wallet_balance', $amount);
+
+            $reseller = $reseller->parent;
+        }
     }
 }
